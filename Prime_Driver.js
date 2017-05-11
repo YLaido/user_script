@@ -7,6 +7,7 @@
 // @match        *://avmo.pw/*/movie/*
 // @match        *://avmoo.com/*/movie/*
 // @match        *://avso.pw/*/movie/*
+// @match        *://avio.pw/*/movie/*
 // @require      http://libs.baidu.com/jquery/2.0.0/jquery.js
 // @require      https://cdn.plyr.io/2.0.12/plyr.js
 // @resource     PlyrCSS https://cdn.plyr.io/2.0.12/plyr.css
@@ -90,18 +91,21 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var plyrCSS = GM_getResourceText ("PlyrCSS");
     $('div[class="row hidden-xs ptb-10 text-center"]').hide();
     GM_addStyle(plyrCSS);                                     //  plyr.js ---- CSS
-    GM_addStyle(['.plyr { width: 700px;margin: 0 auto;}',
+    GM_addStyle(['.plyr {width: 700px;margin: 0 auto;}',
                  '#Sample {background-color: #c6538c;text-align: center;}',
-                 '.plyr__controls {}',
+                 '#TorrentKitty::scrollbar-track {box-shadow: inset 0 0 6px rgba(0,0,0,0.3);border-radius: 10px;background-color: #F5F5F5;}',
+                 '#TorrentKitty::scrollbar {width: 12px;background-color: #F5F5F5;}',
+                 '#TorrentKitty::scrollbar-thumb {border-radius: 10px;box-shadow: inset 0 0 6px rgba(0,0,0,.3);background-color: #555;}',
                  'video {object-fit: inherit;}' //poster scale the screen
                     ].join(""));
     var parser = new DOMParser();
     var ParentKey = document.getElementsByClassName('bigImage')[0].href;    // 大图的href
+    var regPF = /video?\/(.*)(\/)/;
     var Serial = $('span[style="color:#CC0000;"]')[0].innerText;     // 识别码
     var Title = $('p[class="header"]');      // 左侧片商信息区域
     var regTokyo = new RegExp('Tokyo Hot');
     var regCarib = new RegExp('Caribbeancom');
-    var regNHDTA = new RegExp('NATURAL HIGH');
+    var regNHDTA = new RegExp('ナチュラルハイ');
     var Preview = document.createElement('video');      //   Sample 视频
     Preview.id = 'player';
     Preview.setAttribute('class','plyr plyr--video plyr--fullscreen-enabled plyr--stopped plyr--ready');
@@ -111,8 +115,10 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var SerialRegCarib = /.*moviepages?\/(.*?)(\/{1})/;     //Caribbean 番号Regex
     var empty = document.createElement('h3');
     var Vendor = extract(Title).nextElementSibling.innerText;      // 制作商Element
-    var Publisher = extract(Title,"发行商:").nextElementSibling.innerText;   //发行商Element
+    //var Publisher = extract(Title,"发行商:").nextElementSibling.innerText;   //发行商Element
     var tk = document.createElement('div');
+    var Document = window.document;
+    tk.id = "TorrentKitty";
     var par_recommend = document.getElementsByClassName('row hidden-xs ptb-10 text-center')[0];
     var arr2 = [];
     tk.style.width = "37%";
@@ -166,7 +172,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
             data_list.style.width = '60%';
             arr2.push(data_list.offsetHeight);
         }
-    });    //  AVMOO Finished!!!
+    });       //  Btso Finished!!!
     if (regTokyo.test(Vendor)) {                                                                ////////////////// Tokyo-Hot Player Goes Here.//////////////////////
         if (Serial) {
             Preview.onerror = function() {
@@ -181,9 +187,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
             };
             Preview.src = 'http://my.cdn.tokyo-hot.com/media/samples/' + Serial + '.mp4';                  /// Tokyo-Hot
             par_recommend.appendChild(Preview);
-           // ImgDiv.removeChild(ImgDiv.getElementsByClassName('bigImage')[0]);
-           // ImgDiv.appendChild(Preview);
-            plyr.setup();
+            plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']});
     }
         else {
             console.log('cannot locate Serial Number');
@@ -199,24 +203,59 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         Preview.onerror = function () {
             this.src = 'http://smovie.caribbeancom.com/sample/movies/' + Serial + '/720p.mp4';
         };
-        plyr.setup();
+        plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']});
     }
     else {
         console.log('Not Caribbean');
     }
-    if (regNHDTA.test(Publisher)) {
-        Preview.src = 'http://151.mediaimage.jp/' + Serial.replace(/(-)/,"_") + '.mp4';
-        par_recommend.appendChild(Preview);
-        plyr.setup();
+    if (regNHDTA.test(Vendor)) {
+        Preview.src = 'http://151.mediaimage.jp/' + Serial.replace(/(-)/,"_") + '.mp4';                   /// NHDTA
+        Preview.onerror = function() {
+          this.src = "";
+        };
+        if (Preview.src) {
+            par_recommend.appendChild(Preview);
+            plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']});
+        }
+    }
+    if (!Preview.src) {
+        if (regPF.test(ParentKey)) {
+            var pinfan = regPF.exec(ParentKey)[1];
+            let arr1 = pinfan.split("");
+            Preview.src = "http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan + "/" + pinfan + "_dmb_w.mp4";  //品番中 "-" 用 00 代替的  #1 超清
+            Preview.onerror = function() {
+                this.src = "http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan + "/" + pinfan + "_dm_w.mp4";  // #2 高清
+                this.onerror = function() {
+                    this.src = "http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan + "/" + pinfan + "_sm_w.mp4";  // #3 普清
+                    this.onerror = function () {
+                        this.src="http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan.replace(/(00)/,"") + "/" + pinfan.replace(/(00)/,"") + "_dmb_w.mp4";
+                        this.onerror = function() {
+                            this.src="http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan.replace(/(00)/,"") + "/" + pinfan.replace(/(00)/,"") + "_dm_w.mp4";
+                            this.onerror = function () {
+                                this.src="http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan.replace(/(00)/,"") + "/" + pinfan.replace(/(00)/,"") + "_sm_w.mp4";
+                                //this.onerror = console.log(Serial + " Not Match: " + this.src);
+								this.onerror = function () {
+									this.src="http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan.replace(/(000)/,"") + "/" + pinfan.replace(/(000)/,"") + "_dmb_s.mp4";
+									this.onerror = function() {
+										this.src="http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan.replace(/(000)/,"") + "/" + pinfan.replace(/(000)/,"") + "_dm_s.mp4";
+										this.onerror = function () {
+											this.src="http://cc3001.dmm.co.jp/litevideo/freepv/" + arr1[0] + "/" + arr1.slice(0,3).join("") + "/" + pinfan.replace(/(000)/,"") + "/" + pinfan.replace(/(000)/,"") + "_sm_s.mp4";
+											this.onerror = console.log(Serial + " Not Match: " + this.src);
+											};
+										};                                 // HORRIBLE CODE ABOVE :<
+									};
+								};
+							};
+						};
+					};
+				};
+            par_recommend.appendChild(Preview);
+            plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']});
+        }
     }
     if (Preview.src) {
-        /*var slideVideo = document.createElement('button');
-        slideVideo.innerText = 'Sample';
-        slideVideo.setAttribute('id','Sample');
-        par_recommend.insertBefore(slideVideo,par_recommend.firstElementChild);*/
         document.querySelector('body > div.container > div.row.movie').nextElementSibling.id = 'Sample';
         $('#Sample').bind('click',function () {
-           // $('div[class="plyr plyr--video plyr--fullscreen-enabled plyr--stopped plyr--ready"]').slideToggle('normal');
             $('div[class="row hidden-xs ptb-10 text-center"]').slideToggle('normal');
         });
     }
@@ -228,8 +267,12 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
             var dom_tk = parser.parseFromString(r_tk, "text/html");
             var list_tk = dom_tk.querySelector('body > div.container > div.index-middle-center > div.content > div > div.list');
             if (list_tk && list_tk != "undefined") {
-                par.insertBefore(tk,bro);
-                tk.appendChild(list_tk);             //将TK插入到avmo中
+                waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
+                    par.insertBefore(tk,bro);
+                    tk.appendChild(list_tk);
+                });
+                //par.insertBefore(tk,bro);
+                //tk.appendChild(list_tk);             //将TK插入到avmo中
                 list_tk.style.overflowY = "scroll";
                 list_tk.style.backgroundColor = "#edffb3";
                 if (arr2 && arr2[0] >260) {
@@ -278,3 +321,80 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         }
     });
 })();
+
+
+function waitForKeyElements (
+    selectorTxt,    /* Required: The jQuery selector string that
+                        specifies the desired element(s).
+                    */
+    actionFunction, /* Required: The code to run when elements are
+                        found. It is passed a jNode to the matched
+                        element.
+                    */
+    bWaitOnce,      /* Optional: If false, will continue to scan for
+                        new elements even after the first match is
+                        found.
+                    */
+    iframeSelector  /* Optional: If set, identifies the iframe to
+                        search.
+                    */
+) {
+    var targetNodes, btargetsFound;
+
+    if (typeof iframeSelector == "undefined")
+        targetNodes     = $(selectorTxt);
+    else
+        targetNodes     = $(iframeSelector).contents ()
+                                           .find (selectorTxt);
+
+    if (targetNodes  &&  targetNodes.length > 0) {
+        btargetsFound   = true;
+        /*--- Found target node(s).  Go through each and act if they
+            are new.
+        */
+        targetNodes.each ( function () {
+            var jThis        = $(this);
+            var alreadyFound = jThis.data ('alreadyFound')  ||  false;
+
+            if (!alreadyFound) {
+                //--- Call the payload function.
+                var cancelFound     = actionFunction (jThis);
+                if (cancelFound)
+                    btargetsFound   = false;
+                else
+                    jThis.data ('alreadyFound', true);
+            }
+        } );
+    }
+    else {
+        btargetsFound   = false;
+    }
+
+    //--- Get the timer-control variable for this selector.
+    var controlObj      = waitForKeyElements.controlObj  ||  {};
+    var controlKey      = '123';
+    var timeControl     = controlObj [controlKey];
+
+    //--- Now set or clear the timer as appropriate.
+    if (btargetsFound  &&  bWaitOnce  &&  timeControl) {
+        //--- The only condition where we need to clear the timer.
+        clearInterval (timeControl);
+        delete controlObj [controlKey];
+    }
+    else {
+        //--- Set a timer, if needed.
+        if ( ! timeControl) {
+            timeControl = setInterval ( function () {
+                    waitForKeyElements (    selectorTxt,
+                                            actionFunction,
+                                            bWaitOnce,
+                                            iframeSelector
+                                        );
+                },
+                300
+            );
+            controlObj [controlKey] = timeControl;
+        }
+    }
+    waitForKeyElements.controlObj   = controlObj;
+}
