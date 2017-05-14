@@ -1,2 +1,5 @@
 # user_script
-For JAV
+
+- For Jav
+- Partially sample video available (Currently CHINESE pages ONLY)
+ 
