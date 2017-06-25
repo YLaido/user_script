@@ -33,32 +33,40 @@ function extract (arr,arr2) {
 	}
 }
 
-function conbine(kw1,kw2,pf,quality) {
-	return "http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + quality;
+function conbine(kw1,kw2,pf) {
+	return ["http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_dmb_w.mp4",
+			"http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_dm_w.mp4",
+			"http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_sm_w.mp4",
+			//  第二种情况
+			"http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_dmb_s.mp4",
+			"http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_dm_s.mp4",
+			"http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_sm_s.mp4"
+		   ];
 }
 
-function set_preview(self,one,three,pf,quality) {
-	if (quality=='1') {
-		self.src = conbine(one,three,pf,"_dmb_w.mp4");     // HD
-		self.onerror = function() {
-			self.src = conbine(one,three,pf,"_dm_w.mp4");   // 320P
-			self.onerror = function() {
-				self.src = conbine(one,three,pf,"_sm_w.mp4");  // 240P
-				self.onerror = function() {console.log('Might be a wrong url: ' + self.src);};
-			};
-		};
+function test_url(preview,list,callback) {
+	if (list.length) {
+		preview.src = list[0][0];
 	}
-	else if (quality=='2') {
-		self.src = conbine(one,three,pf,"_dmb_s.mp4");     // HD
-		self.onerror = function() {
-			self.src = conbine(one,three,pf,"_dm_s.mp4");   // 320P
-			self.onerror = function() {
-				self.src = conbine(one,three,pf,"_sm_s.mp4");  // 240P
-				self.onerror = function() {console.log('Might be a wrong url: ' + self.src);};
-			};
-		};
+	preview.onerror = function() {
+		if (list.length) {
+			test_url(preview,list,callback);
+		}
+		else {
+			console.log('No more url available!');
+			if (callback && typeof(callback) === "function") { callback(); }
+			else {console.log('callback is : '+ typeof callback);}
+			return;
+		}
+	};
+	if (!list[0].length) {
+		list.splice(0,1);
+	}
+	else {
+		list[0].shift();
 	}
 }
+
 
 function speed(text,id,cls) {
 	let el = document.createElement('button');
@@ -115,7 +123,7 @@ function lib_sift (iter,pattern) {
 		if (pattern.test(iter[i])) {
 			return iter[i];
 		}
-		else {console.log('Library Query ERROR');return False;}
+		else {console.log('Library Query ERROR');return false;}
 	}
 }
 
@@ -326,64 +334,61 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 	}
 	if (!Preview.src) {
 		if (regPF.test(ParentKey)) {
-			var pinfan = regPF.exec(ParentKey)[1];                      //  Source from D M M
+			var pinfan = regPF.exec(ParentKey)[1];
 			let arr1 = pinfan.split("");
-			Preview.id = 'case01';
-			set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),pinfan,'1');                     // First situation:  品番无变化
-			Preview.onerror = function () {
-				set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),pinfan,'2');
-				this.onerror = function() {
-					set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(00)/,""),'1');          // Second situation: 去掉品番中的00
-					Preview.onerror = function () {
-						set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(00)/,""),'2');
-						this.onerror = function() {
-							set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,""),'1');       // Third situation:  去掉品番中的000
-							Preview.onerror = function () {
-								set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,""),'2');
-								this.onerror = function() {
-									GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary
-										method: "GET",
-										url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
-										headers : {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.96 Safari/537.36"},
-										onload: function(response) {
-											var r = response.responseText;
-											var lib_pf;
-											var pattern = /adult\/(.*?)\//;
-											var dom = parser.parseFromString(r, "text/html");
-											var lib_subs = dom.getElementsByClassName('id');    // lib多个候选项时的番号element
-											if (dom.getElementById('video_jacket_img')) {
-												let SRC = dom.getElementById('video_jacket_img').src;
-												lib_pf = pattern.exec(SRC)[1];   // true 品番
-												let arr1 = lib_pf.split("");
-												set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),lib_pf,'1');
-												Preview.onerror = function() {set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),lib_pf,'2');};
-												//Preview.src= conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf,"_dmb_w.mp4");
-												//Preview.onerror = console.log('wrong lib: ' + Preview.src);
-											}
-											else if (lib_subs) {
-												var lib_subs2 = (function(e) {for (let i=0;i<e.length;i++) {if (e[i].innerText == Serial) {return e[i];}}})(lib_subs);
-												let lib_sub = verify(lib_subs2,Serial,Title_big);
-												let pat = new RegExp(Serial);
-												lib_pf = pattern.exec(lib_sub.nextElementSibling.src)[1]; //here
-												let arr1 = lib_pf.split("");
-												set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),lib_pf,'1');
-												Preview.onerror = function() {set_preview(Preview,arr1[0],arr1.slice(0,3).join(""),lib_pf,'2');};
-												//Preview.src= conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf,"_dmb_w.mp4");
-												//Preview.onerror = console.log('wrong lib: ' + Preview.src);
-											}
-										}
-									});
-								};
-							};
-						};
-					};
-				};
-			};
+			var dfd = $.Deferred();
+			var stack01 = [
+				conbine( arr1[0],arr1.slice(0,3).join(""),pinfan ),
+				conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(00)/,"")),
+				conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,"") )
+			];
+			test_url(Preview,stack01,function() {
+				/*var wait = function(dfd) {
+				test_url(Preview,stack01);
+				dfd.resolve();
+				console.log('dfd has been resolved');
+				return dfd;
+			};*/
+				GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary
+					method: "GET",
+					url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
+					headers : {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.96 Safari/537.36"},
+					onload: function(response) {
+						var r = response.responseText;
+						var lib_pf;
+						var pattern = /adult\/(.*?)\//;
+						var dom = parser.parseFromString(r, "text/html");
+						var lib_subs = dom.getElementsByClassName('id');    // lib多个候选项时的番号element
+						if (dom.getElementById('video_jacket_img')) {
+							let SRC = dom.getElementById('video_jacket_img').src;
+							lib_pf = pattern.exec(SRC)[1];   // true 品番
+							let arr1 = lib_pf.split("");
+							var stack02 = [
+								conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf)
+							];
+							test_url(Preview,stack02);
+							console.log('GM did tried01.');
+						}
+						else if (lib_subs) {
+							var lib_subs2 = (function(e) {for (let i=0;i<e.length;i++) {if (e[i].innerText == Serial) {return e[i];}}})(lib_subs);
+							let lib_sub = verify(lib_subs2,Serial,Title_big);
+							let pat = new RegExp(Serial);
+							lib_pf = pattern.exec(lib_sub.nextElementSibling.src)[1]; //here
+							let arr1 = lib_pf.split("");
+							var stack03 = [
+								conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf)
+							];
+							test_url(Preview,stack03);
+							console.log('GM did tried02.');
+						}
+					}
+				});});
 			par_recommend.appendChild(Preview);
 			plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
 		}
 	}
 	if (Preview.src) {
+		Preview.id = 'case01';
 		var Speed = document.createElement('button');
 		var speed_2 = speed('2','speed_2','speed');
 		var speed_1_5 = speed('1.5','speed_1_5','speed');
@@ -404,14 +409,6 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 		$('#Sample').bind('click',function () {
 			$('div[class="row hidden-xs ptb-10 text-center"]').slideToggle('normal');
 		});
-		/*$('.speed').on('click',function() {
-		    if ($(this).innerText == 1) {
-			    Speed.innerText = 'Speed';
-			}
-			else {
-				Speed.innerText = $(this).innerText;
-			}
-		});*/
 		$('#Speed').hover(function () { $('.speed').show();},
 						  function() { $('.speed').hide(); });
 		$('.speed').hover(function() { $(this).css({'background-color': 'rgba(52,152,219,1.0)'});},
@@ -480,7 +477,6 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 		}
 	});
 })();
-
 
 function waitForKeyElements (
 selectorTxt,    /* Required: The jQuery selector string that
