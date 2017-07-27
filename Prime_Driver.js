@@ -17,7 +17,7 @@
 // @grant        GM_addStyle
 // @connect      btso.pw
 // @connect      javlibrary.com
-// @connect      torrentkitty.ws
+// @connect      torrentkitty.red
 // ==/UserScript==
 
 function extract (arr,arr2) {
@@ -138,7 +138,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 	for (var b =0;b<Img_tag.length;b++) {
 		if (Img_tag[b]!== null && typeof(Img_tag[b] != "undefined")) {
 			Img_tag[b].style.width = "4%";
-			if (Img_tag[b].src === "http://torrentkitty.ws/static-files/images/ext/video.png") {
+			if (Img_tag[b].src === "http://torrentkitty.red/static-files/images/ext/video.png") {
 				Img_tag[b].nextElementSibling.style.backgroundColor = "#ffb3ff";
 			}
 		}
@@ -197,6 +197,8 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 				 'video {object-fit: inherit;}' //poster scale the screen
 				].join(""));
 	var parser = new DOMParser();
+	var UA = navigator.userAgent;
+	var MainWindow = window;
 	var ParentKey = document.getElementsByClassName('bigImage')[0].href;    // 大图的href
 	var regPF = /video?\/(.*)(\/)/;
 	var Serial = $('span[style="color:#CC0000;"]')[0].innerText;     // 识别码
@@ -232,7 +234,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 	GM_xmlhttpRequest({
 		method: "GET",
 		url: "https://btso.pw/search/" + num,
-		headers : {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.96 Safari/537.36"},
+		headers : {"User-Agent": UA},
 		onload: function(response) {
 			var r = response.responseText;
 			var dom = parser.parseFromString(r, "text/html");
@@ -352,7 +354,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 				GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary
 					method: "GET",
 					url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
-					headers : {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.96 Safari/537.36"},
+					headers : {"User-Agent": UA},
 					onload: function(response) {
 						var r = response.responseText;
 						var lib_pf;
@@ -415,15 +417,22 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 						  function () { $(this).css({'background-color': 'rgba(52,152,219,0.4)'});}
 						 );
 	}
-	GM_xmlhttpRequest({
+	var TkFetch = (function() {GM_xmlhttpRequest({
 		method: "GET",                                                    //这里是TorrentKitty第一页部分
-		headers : {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.96 Safari/537.36"},
-		url: "http://torrentkitty.ws/tk/" + num + "/1-0-0.html",
+		headers : {"User-Agent": navigator.userAgent},
+		url: "http://torrentkitty.red/tk/" + num + "/1-0-0.html",
 		onload: function(response) {
 			var r_tk = response.responseText;
 			var dom_tk = parser.parseFromString(r_tk, "text/html");
+			if (dom_tk.title.indexOf('moment') > -1) {
+				let auth = MainWindow.open("http://torrentkitty.red",'Check_CF','height=100,width=100,top=200,left=1200' );          // Bypass CloudFlare
+				let s = setTimeout(function() {
+					auth.close();
+					//MainWindow.location.reload();
+					return TkFetch();
+				},5000);
+			}
 			var list_tk = dom_tk.getElementsByClassName('list')[0];
-			//var list_tk = dom_tk.querySelector('body > div.container > div.index-middle-center > div.content > div > div.list');
 			if (list_tk && list_tk != "undefined") {
 				waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
 					par.insertBefore(tk,bro);
@@ -455,7 +464,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 							$(list_tk).off("scroll");
 							GM_xmlhttpRequest({
 								method: "GET",
-								url: "http://torrentkitty.ws/tk/" + num + "/2-0-0.html",
+								url: "http://torrentkitty.red/tk/" + num + "/2-0-0.html",
 								onload: function(response) {
 									var p2 = response.responseText;
 									var p2_dom = parser.parseFromString(p2,"text/html");
@@ -472,10 +481,10 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 				});
 			}
 			else {
-				console.log("torrentkitty: ",list_tk);
+				console.log("torrentkitty: ",dom_tk);
 			}
 		}
-	});
+	});})();
 })();
 
 function waitForKeyElements (
