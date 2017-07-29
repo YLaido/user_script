@@ -417,7 +417,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 						  function () { $(this).css({'background-color': 'rgba(52,152,219,0.4)'});}
 						 );
 	}
-	var TkFetch = (function() {GM_xmlhttpRequest({
+	var TkFetch = function() {GM_xmlhttpRequest({
 		method: "GET",                                                    //这里是TorrentKitty第一页部分
 		headers : {"User-Agent": navigator.userAgent},
 		url: "http://torrentkitty.red/tk/" + num + "/1-0-0.html",
@@ -484,7 +484,8 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 				console.log("torrentkitty: ",dom_tk);
 			}
 		}
-	});})();
+	});};
+	TkFetch();
 })();
 
 function waitForKeyElements (
