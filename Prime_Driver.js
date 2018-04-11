@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         avmoo_magnet_below
+// @name         avmoo_magnet_and_trailer
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.2
 // @description  Practice
 // @author       YLaido
-// @match        *://javtag.com/*/movie/*
-// @match        *://avso.pw/*/movie/*
+// @match        *://javmoo.net/*/movie/*
+// @match        *://javfee.com/*/movie/*
 // @match        *://avio.pw/*/movie/*
 // @require      http://libs.baidu.com/jquery/2.0.0/jquery.js
 // @require      https://cdn.plyr.io/2.0.12/plyr.js
@@ -16,7 +16,7 @@
 // @grant        GM_addStyle
 // @connect      btso.pw
 // @connect      javlibrary.com
-// @connect      torrentkitty.kim
+// @connect      cntorrentkitty.com
 // ==/UserScript==
 
 function extract (arr,arr2) {
@@ -49,7 +49,7 @@ function test_url(preview,list,callback) {
     }
     preview.onerror = function() {
         if (list.length) {
-            test_url(preview,list,callback);
+            test_url(preview,list,callback);    // Loop through available trailer url.
         }
         else {
             console.log('No more url available!');
@@ -72,7 +72,7 @@ function speed(text,id,cls) {
     el.innerText = text;
     el.id = id;
     if (cls) {
-        el.setAttribute('class',cls);
+        el.setAttribute('class',cls);   // Customize speed selecting option of Plyr.
         return el;
     }
     else {
@@ -81,7 +81,7 @@ function speed(text,id,cls) {
 }
 
 function verify(iter,serial,title) {
-    if (iter instanceof HTMLElement) {
+    if (iter instanceof HTMLElement) {                 // For javlibrary.com
         console.log(iter);
         return iter;}
     else {
@@ -109,7 +109,7 @@ function setClick(el,speed,Preview) {
     $(el).click(function () {
         Preview.playbackRate = speed;
         if (speed != 1) {
-            $('#Speed')[0].childNodes[0].nodeValue = speed;
+            $('#Speed')[0].childNodes[0].nodeValue = speed;          // display current playBackRate.
         }
         else {
             $('#Speed')[0].childNodes[0].nodeValue = 'Speed';
@@ -119,7 +119,7 @@ function setClick(el,speed,Preview) {
 
 function lib_sift (iter,pattern) {
     for (let i=0;i<iter.length;i++) {
-        if (pattern.test(iter[i])) {
+        if (pattern.test(iter[i])) {            // For javlibrary.com
             return iter[i];
         }
         else {console.log('Library Query ERROR');return false;}
@@ -137,7 +137,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     for (var b =0;b<Img_tag.length;b++) {
         if (Img_tag[b]!== null && typeof(Img_tag[b] != "undefined")) {
             Img_tag[b].style.width = "4%";
-            if (Img_tag[b].src === "http://torrentkitty.kim/static-files/images/ext/video.png") {
+            if (Img_tag[b].src === "http://cntorrentkitty.com/static-files/images/ext/video.png") {
                 Img_tag[b].nextElementSibling.style.backgroundColor = "#ffb3ff";
             }
         }
@@ -198,9 +198,9 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var parser = new DOMParser();
     var UA = navigator.userAgent;
     var MainWindow = window;
-    var ParentKey = document.getElementsByClassName('bigImage')[0].href;    // 大图的href
+    var ParentKey = document.getElementsByClassName('bigImage')[0].href;    // avmo每部片大图的href
     var regPF = /video?\/(.*)(\/)/;
-    var Serial = $('span[style="color:#CC0000;"]')[0].innerText;     // 识别码
+    var Serial = $('span[style="color:#CC0000;"]')[0].innerText;     // 识别码(番号)
     var Title = $('p[class="header"]');      // 左侧片商信息区域
     var Title_big = document.getElementsByTagName('h3')[0].innerText;
     var regTokyo = new RegExp('Tokyo Hot');
@@ -217,16 +217,19 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var SerialRegCarib = /.*moviepages?\/(.*?)(\/{1})/;     //Caribbean 番号Regex
     var empty = document.createElement('h3');
     var Vendor = extract(Title).nextElementSibling.innerText;      // 制作商Element
-    //var Publisher = extract(Title,"发行商:").nextElementSibling.innerText;   //发行商Element   some movie doesnt have such item
     var tk = document.createElement('div');
     var Document = window.document;
     tk.id = "TorrentKitty";
     var par_recommend = document.getElementsByClassName('row hidden-xs ptb-10 text-center')[0];
     var arr2 = [];
-    tk.style.width = "37%";
-    tk.style.float = "right";
-    empty.innerHTML = '<center>None</center>';
-    empty.style.width = '60%';
+    $(tk).css({'width':'37%',
+              "float" : 'right',
+              });
+    empty.innerHTML = '<center>Pity, Nothing Found.</center>';
+    $(empty).attr({'class': 'data-list',});
+    $(empty).css({'width': '60%',
+                 'float': 'left',
+                 });
     var par = $('div.hidden-xs')[2];
     var bro = document.getElementsByClassName('row ptb-20 text-center')[0];
     var num = $('[style="color:#CC0000;"]').text();
@@ -268,14 +271,16 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 },function() {
                     $(this).css('background-color','#eeecec');
                 });
+                data_list.style.width = '60%';
+                arr2.push(data_list.offsetHeight);
             }
             else {
                 par.insertBefore(empty,bro);
             }
-            data_list.style.width = '60%';
-            arr2.push(data_list.offsetHeight);
         }
-    });       //  Btso Finished!!!
+    });
+    ////////////////////////  Btso Finished!!!  /////////////////////////////
+
     if (regTokyo.test(Vendor)) {                                                                ////////////////// Tokyo-Hot Player Goes Here.//////////////////////
         if (Serial) {
             Preview.onerror = function() {
@@ -324,7 +329,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         let time = $('span.header')[1].parentElement.innerText;
         let Regtime = /(\d{4})-(\d{2})-(\d{2})/;
         let smSerial = Serial.toLowerCase().replace('-','_');
-        Preview.src = 'http://dl.sod.co.jp/' + Regtime.exec(time)[1] + Regtime.exec(time)[2] + '/' + smSerial + '/' + smSerial + '_sample.mp4';       // SOD
+        Preview.src = 'http://dl.sod.co.jp/' + Regtime.exec(time)[1] + Regtime.exec(time)[2] + '/' + smSerial + '/' + smSerial + '_sample.mp4';       /// SOD
         Preview.onerror = function() {
             this.src = "";
         };
@@ -344,13 +349,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,"") )
             ];
             test_url(Preview,stack01,function() {
-                /*var wait = function(dfd) {
-				test_url(Preview,stack01);
-				dfd.resolve();
-				console.log('dfd has been resolved');
-				return dfd;
-			};*/
-                GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary
+                GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary中获取"品番"
                     method: "GET",
                     url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
                     headers : {"User-Agent": UA},
@@ -416,27 +415,29 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                           function () { $(this).css({'background-color': 'rgba(52,152,219,0.4)'});}
                          );
     }
+    ///////////////////////////  Preview Player End Here /////////////////////////////
     var TkFetch = function() {GM_xmlhttpRequest({
         method: "GET",                                                    //这里是TorrentKitty第一页部分
         headers : {"User-Agent": navigator.userAgent},
-        url: "http://torrentkitty.kim/tk/" + num + "/1-0-0.html",
+        url: "http://cntorrentkitty.com/tk/" + num + "/1-0-0.html",
         onload: function(response) {
             var r_tk = response.responseText;
             var dom_tk = parser.parseFromString(r_tk, "text/html");
+///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
             if (dom_tk.title.indexOf('moment') > -1) {
-                let auth = MainWindow.open("http://torrentkitty.kim",'Check_CF','height=100,width=100,top=200,left=1200' );          // Bypass CloudFlare
+                let auth = MainWindow.open("http://cntorrentkitty.com/",'Check_CF','height=100,width=100,top=200,left=1200' );
                 let s = setTimeout(function() {
                     auth.close();
-                    //MainWindow.location.reload();
                     return TkFetch();
                 },5000);
             }
+ ///////////////////////////////    Bypass CloudFlare End ///////////////////////
             var list_tk = dom_tk.getElementsByClassName('list')[0];
             if (list_tk && list_tk != "undefined") {
                 waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
                     par.insertBefore(tk,bro);
                     tk.appendChild(list_tk);
-                });            //将TK插入到avmo中
+                });            /// 将TK插入到avmo中
                 list_tk.style.overflowY = "scroll";
                 list_tk.style.backgroundColor = "#edffb3";
                 if (arr2 && arr2[0] >260) {
@@ -455,7 +456,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     for (let y=0;y<Re.length;y++) {
                         Re[y].remove();
                     }
-                    if (nScrollTop + nDivHight >= nScrollHight-10) {
+                    if (nScrollTop + nDivHight >= nScrollHight-10) {   //滚动到底加载torrentkitty第二页
                         if (tk.getElementsByClassName('list2')[0]) {
                             console.log('nothing');
                         }
@@ -463,7 +464,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                             $(list_tk).off("scroll");
                             GM_xmlhttpRequest({
                                 method: "GET",
-                                url: "http://torrentkitty.kim/tk/" + num + "/2-0-0.html",
+                                url: "http://cntorrentkitty.com/tk/" + num + "/2-0-0.html",  //加载torrentkitty第二页
                                 onload: function(response) {
                                     var p2 = response.responseText;
                                     var p2_dom = parser.parseFromString(p2,"text/html");
@@ -480,7 +481,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 });
             }
             else {
-                console.log("torrentkitty: ",dom_tk);
+                console.log("(Check if CloudFlare has interfered.)torrentkitty: ",dom_tk);
             }
         }
     });};
