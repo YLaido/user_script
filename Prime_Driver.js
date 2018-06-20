@@ -4,7 +4,7 @@
 // @version      0.1.2
 // @description  Practice
 // @author       YLaido
-// @match        *://javmoo.net/*/movie/*
+// @match        *://javlog.com/*/movie/*
 // @match        *://javfee.com/*/movie/*
 // @match        *://avio.pw/*/movie/*
 // @require      http://libs.baidu.com/jquery/2.0.0/jquery.js
@@ -162,7 +162,9 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 if (A_tag[d].previousElementSibling.tagName == "IMG") {      //Magnet
                     A_tag[d].previousElementSibling.style.width = "3%";
                     A_tag[d].onclick = function (event) {
-                        GM_setClipboard(this.href);
+                        let pattern = /\/([0-9a-zA-Z]{31,41})\.html/;
+                        let hash_href = this.parentElement.parentElement.lastElementChild.firstElementChild.href;
+                        GM_setClipboard("magnet:?xt=urn:btih:" + pattern.exec(hash_href)[1]);
                         event.preventDefault();
                     };
                     A_tag[d].style.color = "red";
@@ -281,7 +283,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     });
     ////////////////////////  Btso Finished!!!  /////////////////////////////
 
-    if (regTokyo.test(Vendor)) {                                                                ////////////////// Tokyo-Hot Player Goes Here.//////////////////////
+    if (regTokyo.test(Vendor)) {                    ////////////////// Tokyo-Hot Player Goes Here.//////////////////////
         if (Serial) {
             Preview.onerror = function() {
                 let hrefRegex = /.*media\/(.*?)(\/{1})/;
@@ -356,7 +358,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     onload: function(response) {
                         var r = response.responseText;
                         var lib_pf;
-                        var pattern = /adult\/(.*?)\//;
+                        let pattern = /adult\/(.*?)\//;
                         var dom = parser.parseFromString(r, "text/html");
                         var lib_subs = dom.getElementsByClassName('id');    // lib多个候选项时的番号element
                         if (dom.getElementById('video_jacket_img')) {
