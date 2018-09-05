@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         avmoo_magnet_and_trailer
 // @namespace    http://tampermonkey.net/
-// @version      0.1.2
+// @version      0.1.3
 // @description  Practice
 // @author       YLaido
-// @match        *://javlog.com/*/movie/*
+// @match        *://javmoo.com/*/movie/*
 // @match        *://javfee.com/*/movie/*
 // @match        *://avio.pw/*/movie/*
 // @require      http://libs.baidu.com/jquery/2.0.0/jquery.js
@@ -16,7 +16,7 @@
 // @grant        GM_addStyle
 // @connect      btso.pw
 // @connect      javlibrary.com
-// @connect      cntorrentkitty.com
+// @connect      cntorrentkitty.org
 // ==/UserScript==
 
 function extract (arr,arr2) {
@@ -137,7 +137,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     for (var b =0;b<Img_tag.length;b++) {
         if (Img_tag[b]!== null && typeof(Img_tag[b] != "undefined")) {
             Img_tag[b].style.width = "4%";
-            if (Img_tag[b].src === "http://cntorrentkitty.com/static-files/images/ext/video.png") {
+            if (Img_tag[b].src === "http://cntorrentkitty.org/static-files/images/ext/video.png") {
                 Img_tag[b].nextElementSibling.style.backgroundColor = "#ffb3ff";
             }
         }
@@ -187,15 +187,15 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var plyrCSS = GM_getResourceText ("PlyrCSS");
     $('div[class="row hidden-xs ptb-10 text-center"]').hide();
     GM_addStyle(plyrCSS);                                     //  plyr.js ---- CSS
-    GM_addStyle(['.plyr {width: 700px;margin: 0 auto;height: 393px}',
+    GM_addStyle(['.plyr__video-wrapper {width: 700px;margin: 0 auto;height: 393px;object-fit: inherit;text-align:center;}',
+                 '.plyr__controls {width:700px;margin:auto}',
                  '#Sample {background-color: #c6538c;text-align: center;}',
                  '.speed { width: 65px;left: 0}',
                  '#Speed {text-align: center;width: 65px}',
                  '#speed_2 {bottom: 300%}',
                  '#speed_1_5 {bottom: 200%}',
                  '#speed_1 {bottom: 100%}',
-                 '#case02,#case03,#case04,#case01  {height: 393px}',
-                 'video {object-fit: inherit;}' //poster scale the screen
+                 'video {object-fit: inherit;}' //make poster scale the screen
                 ].join(""));
     var parser = new DOMParser();
     var UA = navigator.userAgent;
@@ -212,7 +212,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var regNHDTA = new RegExp('ナチュラルハイ');
     var Preview = document.createElement('video');      //   Sample 视频
     Preview.id = 'player';
-    Preview.setAttribute('class','plyr plyr--video plyr--fullscreen-enabled plyr--stopped plyr--ready');
+    Preview.setAttribute('class','plyr--video plyr--fullscreen-enabled plyr--stopped plyr--ready');
     Preview.setAttribute('controls','controls');
     Preview.poster = ParentKey;
     var ImgDiv = $('div[class="col-md-9 screencap"]')[0];
@@ -390,7 +390,6 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         }
     }
     if (Preview.src) {
-        Preview.id = 'case01';
         var Speed = document.createElement('button');
         var speed_2 = speed('2','speed_2','speed');
         var speed_1_5 = speed('1.5','speed_1_5','speed');
@@ -421,13 +420,13 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var TkFetch = function() {GM_xmlhttpRequest({
         method: "GET",                                                    //这里是TorrentKitty第一页部分
         headers : {"User-Agent": navigator.userAgent},
-        url: "http://cntorrentkitty.com/tk/" + num + "/1-0-0.html",
+        url: "http://cntorrentkitty.org/tk/" + num + "/1-0-0.html",
         onload: function(response) {
             var r_tk = response.responseText;
             var dom_tk = parser.parseFromString(r_tk, "text/html");
 ///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
             if (dom_tk.title.indexOf('moment') > -1) {
-                let auth = MainWindow.open("http://cntorrentkitty.com/",'Check_CF','height=100,width=100,top=200,left=1200' );
+                let auth = MainWindow.open("http://cntorrentkitty.org/",'Check_CF','height=100,width=100,top=200,left=1200' );
                 let s = setTimeout(function() {
                     auth.close();
                     return TkFetch();
@@ -466,7 +465,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                             $(list_tk).off("scroll");
                             GM_xmlhttpRequest({
                                 method: "GET",
-                                url: "http://cntorrentkitty.com/tk/" + num + "/2-0-0.html",  //加载torrentkitty第二页
+                                url: "http://cntorrentkitty.org/tk/" + num + "/2-0-0.html",  //加载torrentkitty第二页
                                 onload: function(response) {
                                     var p2 = response.responseText;
                                     var p2_dom = parser.parseFromString(p2,"text/html");
