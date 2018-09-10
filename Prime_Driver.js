@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         avmoo_magnet_and_trailer
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.4
 // @description  Practice
 // @author       YLaido
 // @match        *://javmoo.com/*/movie/*
@@ -162,11 +162,26 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 if (A_tag[d].previousElementSibling.tagName == "IMG") {      //Magnet
                     A_tag[d].previousElementSibling.style.width = "3%";
                     A_tag[d].onclick = function (event) {
+                        GM_xmlhttpRequest({
+                            method : "GET",
+                            url: this.href,
+                            onload: function (resp) {
+                                let parser = new DOMParser();
+                                var r = resp.responseText;
+                                var dom = parser.parseFromString(r, "text/html");
+                                GM_setClipboard("magnet:?xt=urn:btih:" + dom.getElementsByClassName('dd infohash')[0].innerText);
+                            }
+                        });
+                        this.style.color = '#8b93a0';
+                        event.preventDefault();
+                    }
+
+                    /*A_tag[d].onclick = function (event) {
                         let pattern = /\/([0-9a-zA-Z]{31,41})\.html/;
                         let hash_href = this.parentElement.parentElement.lastElementChild.firstElementChild.href;
                         GM_setClipboard("magnet:?xt=urn:btih:" + pattern.exec(hash_href)[1]);
                         event.preventDefault();
-                    };
+                    };*/
                     A_tag[d].style.color = "red";
                     A_tag[d].style.fontWeight = "900";
                 }
@@ -225,12 +240,12 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var par_recommend = document.getElementsByClassName('row hidden-xs ptb-10 text-center')[0];
     var arr2 = [];
     $(tk).css({'width':'37%',
-              "float" : 'right',
+               "float" : 'right',
               });
     empty.innerHTML = '<center>Pity, Nothing Found.</center>';
     $(empty).attr({'class': 'data-list',});
     $(empty).css({'width': '60%',
-                 'float': 'left',
+                  'float': 'left',
                  });
     var par = $('div.hidden-xs')[2];
     var bro = document.getElementsByClassName('row ptb-20 text-center')[0];
@@ -260,6 +275,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     a.href = arr1[j].href.replace(/.*hash\//,'magnet:?xt=urn:btih:');
                     a.onclick = function (event) {
                         GM_setClipboard(this.href);
+                        this.style.color = '#98a6bc';
                         event.preventDefault();
                     };
                     size[j].innerText = '';
@@ -424,7 +440,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         onload: function(response) {
             var r_tk = response.responseText;
             var dom_tk = parser.parseFromString(r_tk, "text/html");
-///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
+            ///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
             if (dom_tk.title.indexOf('moment') > -1) {
                 let auth = MainWindow.open("http://cntorrentkitty.org/",'Check_CF','height=100,width=100,top=200,left=1200' );
                 let s = setTimeout(function() {
@@ -432,7 +448,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     return TkFetch();
                 },5000);
             }
- ///////////////////////////////    Bypass CloudFlare End ///////////////////////
+            ///////////////////////////////    Bypass CloudFlare End ///////////////////////
             var list_tk = dom_tk.getElementsByClassName('list')[0];
             if (list_tk && list_tk != "undefined") {
                 waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
