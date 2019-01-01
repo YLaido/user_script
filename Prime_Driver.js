@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         avmoo_magnet_and_trailer
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      1.0.0
 // @description  Practice
 // @author       YLaido
-// @match        *://javmoo.com/*/movie/*
+// @match        *://avmoo.net/*/movie/*
+// @match        *://avmoo.xyz/*/movie/*
+// @match        *://avsox.net/*/movie/*
 // @match        *://javfee.com/*/movie/*
 // @match        *://avio.pw/*/movie/*
 // @require      http://libs.baidu.com/jquery/2.0.0/jquery.js
@@ -14,9 +16,12 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
-// @connect      btso.pw
+// @connect      btsow.pw
+// @connect      btbit.pw
 // @connect      javlibrary.com
+// @connect      btdb.to
 // @connect      cntorrentkitty.org
+// @connect      cntorrentkitty.net
 // ==/UserScript==
 
 function extract (arr,arr2) {
@@ -30,6 +35,49 @@ function extract (arr,arr2) {
             return arr[i];
         }
     }
+}
+
+function get_pagin(URL,site) {
+    let pagi = [];
+    GM_xmlhttpRequest({
+        method : "GET",
+        url: URL,
+        onload: function (response) {
+            let parser = new DOMParser();
+            let dom = parser.parseFromString(response.responseText, "text/html");
+            if (site=='cntk') {
+                if (dom.getElementsByClassName('page-split')) {
+                    console.log('this is dom:',dom);
+                    pagi = /\d/.exec(dom.getElementsByClassName('page-split')[0].firstElementChild.innerText)[0];
+
+                }
+                else {console.log('sth wrong.')}
+            }
+            else if (site=='btbit') {
+                if (dom.getElementsByClassName('pager')) {
+                    pagi = /\d/.exec(dom.getElementsByClassName('pager')[0].firstElementChild.innerText)[0];
+                    console.log('this is pagin2:',pagi);
+                }
+                else {console.log('Sth wrong.')}
+            }
+            /*switch (site){
+                case 'cntk':
+                    if (dom.getElementsByClassName('page-split')) {
+                        pagi = /\d/.exec($('div[class="page-split"]').children().first().text())[0];
+                    }
+                    else {console.log('sth wrong.')}
+                    break;
+                case 'btbit':
+                    if (dom.getElementsByClassName('pager')) {
+                        pagi = /\d/.exec($(".pager").children().first().text())[0];
+                    }
+                    else {console.log('Sth wrong.')}
+                    break;
+            }*/
+            console.log('this is pagin1:',pagi);
+        }
+    })
+    return pagi;
 }
 
 function conbine(kw1,kw2,pf) {
@@ -84,7 +132,7 @@ function verify(iter,serial,title) {
     if (iter instanceof HTMLElement) {                 // For javlibrary.com
         console.log(iter);
         return iter;}
-    else {
+    else if (iter){
         for (let i=0;i<iter.length;i++) {
             if (iter[i].innerText == serial && iter[i].parentNode.title == title) {
                 return iter[i];
@@ -105,7 +153,7 @@ function verify(iter,serial,title) {
 }
 
 
-function setClick(el,speed,Preview) {
+function setClick(el,speed,Preview) {  // set Play Speed
     $(el).click(function () {
         Preview.playbackRate = speed;
         if (speed != 1) {
@@ -130,6 +178,14 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     var P_tag = list_tk.getElementsByTagName('p');
     var Img_tag = list_tk.getElementsByTagName('img');
     var A_tag = list_tk.getElementsByTagName('a');
+    [].forEach.call(A_tag,function(el) {
+        if (el.href){
+            el.href = "http://cntorrentkitty.org" + el.pathname + el.hash;
+        }
+        else {
+            console.log(el.href);
+        }
+    });
     var Re = list_tk.getElementsByClassName('related');
     for (let y=Re.length;y>=0;y--) {
         if (Re[y] !== null && typeof(Re[y]) !="undefined")
@@ -175,13 +231,6 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                         this.style.color = '#8b93a0';
                         event.preventDefault();
                     }
-
-                    /*A_tag[d].onclick = function (event) {
-                        let pattern = /\/([0-9a-zA-Z]{31,41})\.html/;
-                        let hash_href = this.parentElement.parentElement.lastElementChild.firstElementChild.href;
-                        GM_setClipboard("magnet:?xt=urn:btih:" + pattern.exec(hash_href)[1]);
-                        event.preventDefault();
-                    };*/
                     A_tag[d].style.color = "red";
                     A_tag[d].style.fontWeight = "900";
                 }
@@ -198,311 +247,371 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 //////////////////////////////   One Time Function   !!!!!!!!!!!!!!!!!!!!!!!
 
 (function() {
-    document.getElementById('movie-share').remove();
-    var plyrCSS = GM_getResourceText ("PlyrCSS");
-    $('div[class="row hidden-xs ptb-10 text-center"]').hide();
-    GM_addStyle(plyrCSS);                                     //  plyr.js ---- CSS
-    GM_addStyle(['.plyr__video-wrapper {width: 700px;margin: 0 auto;height: 393px;object-fit: inherit;text-align:center;}',
-                 '.plyr__controls {width:700px;margin:auto}',
-                 '#Sample {background-color: #c6538c;text-align: center;}',
-                 '.speed { width: 65px;left: 0}',
-                 '#Speed {text-align: center;width: 65px}',
-                 '#speed_2 {bottom: 300%}',
-                 '#speed_1_5 {bottom: 200%}',
-                 '#speed_1 {bottom: 100%}',
-                 'video {object-fit: inherit;}' //make poster scale the screen
-                ].join(""));
-    var parser = new DOMParser();
-    var UA = navigator.userAgent;
-    var MainWindow = window;
-    var ParentKey = document.getElementsByClassName('bigImage')[0].href;    // avmo每部片大图的href
-    var regPF = /video?\/(.*)(\/)/;
-    var Serial = $('span[style="color:#CC0000;"]')[0].innerText;     // 识别码(番号)
-    var Title = $('p[class="header"]');      // 左侧片商信息区域
-    var Title_big = document.getElementsByTagName('h3')[0].innerText;
-    var regTokyo = new RegExp('Tokyo Hot');
-    var regCarib = new RegExp('Caribbeancom');
-    var regSod = new RegExp('SODクリエイト');
-    var regNum = /\d{3}/;
-    var regNHDTA = new RegExp('ナチュラルハイ');
-    var Preview = document.createElement('video');      //   Sample 视频
-    Preview.id = 'player';
-    Preview.setAttribute('class','plyr--video plyr--fullscreen-enabled plyr--stopped plyr--ready');
-    Preview.setAttribute('controls','controls');
-    Preview.poster = ParentKey;
-    var ImgDiv = $('div[class="col-md-9 screencap"]')[0];
-    var SerialRegCarib = /.*moviepages?\/(.*?)(\/{1})/;     //Caribbean 番号Regex
-    var empty = document.createElement('h3');
-    var Vendor = extract(Title).nextElementSibling.innerText;      // 制作商Element
-    var tk = document.createElement('div');
-    var Document = window.document;
-    tk.id = "TorrentKitty";
-    var par_recommend = document.getElementsByClassName('row hidden-xs ptb-10 text-center')[0];
-    var arr2 = [];
-    $(tk).css({'width':'37%',
-               "float" : 'right',
-              });
-    empty.innerHTML = '<center>Pity, Nothing Found.</center>';
-    $(empty).attr({'class': 'data-list',});
-    $(empty).css({'width': '60%',
-                  'float': 'left',
-                 });
-    var par = $('div.hidden-xs')[2];
-    var bro = document.getElementsByClassName('row ptb-20 text-center')[0];
-    var num = $('[style="color:#CC0000;"]').text();
-    GM_xmlhttpRequest({
-        method: "GET",
-        url: "https://btso.pw/search/" + num,
-        headers : {"User-Agent": UA},
-        onload: function(response) {
-            var r = response.responseText;
-            var dom = parser.parseFromString(r, "text/html");
-            var data_list = dom.querySelector('body > div.container > div.data-list');      //磁力资源列表
-            if (data_list !== null) {
-                var size = data_list.getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size'); //size作为粘贴按钮
-                var maglink = data_list.getElementsByTagName('a');
-                var arr1 = [];
-                for (var v=0;v<size.length;v++){
-                    arr1.push(maglink[v]);              //若不将maglink存储进array中，后面插入<a>会导致maglink发生变化
-                }
-                par.insertBefore(data_list,bro);
-                data_list.style.float = "left";       //想要div左右分布的话必须一同设置左右float
-                var row = $('[class$=row]');
-                for (var j=0;j<size.length;j++){
-                    var a = document.createElement('a');
-                    a.innerText = size[j].innerText;
-                    a.setAttribute('class','Copy');
-                    a.href = arr1[j].href.replace(/.*hash\//,'magnet:?xt=urn:btih:');
-                    a.onclick = function (event) {
-                        GM_setClipboard(this.href);
-                        this.style.color = '#98a6bc';
-                        event.preventDefault();
-                    };
-                    size[j].innerText = '';
-                    size[j].appendChild(a);
-                }
-                for (var i=1;i< row.length;i++) {
-                    row[i].firstElementChild.setAttribute('target','_blank');
-                }
-                row.hover(function() {                //鼠标选定时变色
-                    $(this).css('background-color','lightblue');
-                },function() {
-                    $(this).css('background-color','#eeecec');
-                });
-                data_list.style.width = '60%';
-                arr2.push(data_list.offsetHeight);
-            }
-            else {
-                par.insertBefore(empty,bro);
-            }
-        }
-    });
-    ////////////////////////  Btso Finished!!!  /////////////////////////////
-
-    if (regTokyo.test(Vendor)) {                    ////////////////// Tokyo-Hot Player Goes Here.//////////////////////
-        if (Serial) {
-            Preview.onerror = function() {
-                let hrefRegex = /.*media\/(.*?)(\/{1})/;
-                if (hrefRegex.test(ParentKey)) {
-                    let num = hrefRegex.exec(ParentKey)[1];
-                    this.src = 'http://my.cdn.tokyo-hot.com/media/samples/' + num + '.mp4';
+    let DOMAINLISTS = ['avmoo.net','javlog.com','avmoo.com','javfee.com','avio.pw','avmoo.pw','avmo.pw','avsox.net','avmoo.xyz'];
+    if (DOMAINLISTS.indexOf(location.hostname) > -1 && location.pathname.indexOf('movie') > -1) {
+        document.getElementById('movie-share').remove();
+        var plyrCSS = GM_getResourceText ("PlyrCSS");
+        $('div[class="row hidden-xs ptb-10 text-center"]').hide();
+        GM_addStyle(plyrCSS);                                     //  plyr.js ---- CSS
+        GM_addStyle(['.plyr__video-wrapper {width: 700px;margin: 0 auto;height: 393px;object-fit: inherit;text-align:center;}',
+                     '.plyr__controls {width:700px;margin:auto}',
+                     '#Sample {background-color: #c6538c;text-align: center;}',
+                     '.speed { width: 65px;left: 0}',
+                     '#Speed {text-align: center;width: 65px}',
+                     '#speed_2 {bottom: 300%}',
+                     '#speed_1_5 {bottom: 200%}',
+                     '#speed_1 {bottom: 100%}',
+                     'video {object-fit: inherit;}', //make poster scale the screen
+                     '.data-list { width: 60%; float: left;}', // btso
+                     '#TorrentKitty { width:37%; float:right;}',
+                     '.item-title {font-size: 17px;font-weight: bold;}', // btdb section starts
+                     '.item-meta-info {font-size: 120%}',
+                     '.fa-magnet {color: red;background-color:#bc1a55}',
+                     '.item-meta-info-value {color:red}',
+                     'a[title="Download using magnet"] {color: red;font-weight: bold;}', // btdb ends
+                     '#btbit_result {height :380px;width:60%;margin-bottom: 35px;background-color: #edffb3; font-size: 85%;float: left; overflow-y: scroll}', // btbit starts
+                     '.sbar {font-size:115%}',
+                     '.slist {font-size:115%}',
+                     '.cpill.fileType2 {display:none;}',
+                     'div.like {display:none;}',
+                     '.fileCount {color:red;font-size:110%}',
+                     '.sbar img{display:inline-block;height:14px;width:14px;vertical-align:middle; margin-right:3px;}', //btbit磁力icon
+                     '.slist ul li img{display:inline-block;height:16px;width:16px;vertical-align:middle;margin-right:3px;}', // btbit文件icon
+                    ].join(""));
+        var parser = new DOMParser();
+        var UA = navigator.userAgent;
+        var MainWindow = window;
+        var ParentKey = document.getElementsByClassName('bigImage')[0].href;    // avmo每部片大图的href
+        var regPF = /video?\/(.*)(\/)/;
+        var Serial = $('span[style="color:#CC0000;"]')[0].innerText;     // 识别码(番号)
+        var Title = $('p[class="header"]');      // 左侧片商信息区域
+        var Title_big = document.getElementsByTagName('h3')[0].innerText;
+        var regTokyo = new RegExp('Tokyo Hot');
+        var regCarib = new RegExp('Caribbeancom');
+        var regSod = new RegExp('SODクリエイト');
+        var regNum = /\d{3}/;
+        var regNHDTA = new RegExp('ナチュラルハイ');
+        var Preview = document.createElement('video');      //   Sample 视频
+        Preview.id = 'player';
+        Preview.setAttribute('class','plyr--video plyr--fullscreen-enabled plyr--stopped plyr--ready');
+        Preview.setAttribute('controls','controls');
+        Preview.poster = ParentKey;
+        var ImgDiv = $('div[class="col-md-9 screencap"]')[0];
+        var SerialRegCarib = /.*moviepages?\/(.*?)(\/{1})/;     //Caribbean 番号Regex
+        var empty = document.createElement('h3');
+        var Vendor = extract(Title).nextElementSibling.innerText;      // 制作商Element
+        var tk = document.createElement('div');
+        var Document = window.document;
+        tk.id = "TorrentKitty";
+        var par_recommend = document.getElementsByClassName('row hidden-xs ptb-10 text-center')[0];
+        var arr2 = [];
+        empty.innerHTML = '<center>Pity, Nothing Found.</center>';
+        $(empty).attr({'class': 'data-list',});
+        var par = $('div.hidden-xs')[2];
+        var bro = document.getElementsByClassName('row ptb-20 text-center')[0];
+        var num = $('[style="color:#CC0000;"]').text();
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: "https://btsow.pw/search/" + num,
+            headers : {"User-Agent": UA},
+            onload: function(response) {
+                var r = response.responseText;
+                var dom = parser.parseFromString(r, "text/html");
+                var data_list = dom.querySelector('body > div.container > div.data-list');      //磁力资源列表
+                if (data_list !== null) {
+                    var size = data_list.getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size'); //size作为粘贴按钮
+                    var maglink = data_list.getElementsByTagName('a');
+                    var arr1 = [];
+                    for (var v=0;v<size.length;v++){
+                        arr1.push(maglink[v]);              //若不将maglink存储进array中，后面插入<a>会导致maglink发生变化
+                    }
+                    par.insertBefore(data_list,bro);
+                    data_list.style.float = "left";       //想要div左右分布的话必须一同设置左右float
+                    var row = $('[class$=row]');
+                    for (var j=0;j<size.length;j++){
+                        var a = document.createElement('a');
+                        a.innerText = size[j].innerText;
+                        a.setAttribute('class','Copy');
+                        a.href = arr1[j].href.replace(/.*hash\//,'magnet:?xt=urn:btih:');
+                        a.onclick = function (event) {
+                            GM_setClipboard(this.href);
+                            this.style.color = '#98a6bc';
+                            event.preventDefault();
+                        };
+                        size[j].innerText = '';
+                        size[j].appendChild(a);
+                    }
+                    for (var i=1;i< row.length;i++) {
+                        row[i].firstElementChild.setAttribute('target','_blank');
+                    }
+                    row.hover(function() {                //鼠标选定时变色
+                        $(this).css('background-color','lightblue');
+                    },function() {
+                        $(this).css('background-color','#eeecec');
+                    });
+                    data_list.style.width = '60%';
+                    arr2.push(data_list.offsetHeight);
                 }
                 else {
-                    console.log("Even the href does not match");
+                    par.insertBefore(empty,bro);
                 }
-            };
-            Preview.src = 'http://my.cdn.tokyo-hot.com/media/samples/' + Serial + '.mp4';                  /// Tokyo-Hot
+            }
+        });
+        ////////////////////////  Btso Finished!!!  /////////////////////////////
+
+        if (regTokyo.test(Vendor)) {                    ////////////////// Tokyo-Hot Player Goes Here.//////////////////////
+            if (Serial) {
+                Preview.onerror = function() {
+                    let hrefRegex = /.*media\/(.*?)(\/{1})/;
+                    if (hrefRegex.test(ParentKey)) {
+                        let num = hrefRegex.exec(ParentKey)[1];
+                        this.src = 'http://my.cdn.tokyo-hot.com/media/samples/' + num + '.mp4';
+                    }
+                    else {
+                        console.log("Even the href does not match");
+                    }
+                };
+                Preview.src = 'http://my.cdn.tokyo-hot.com/media/samples/' + Serial + '.mp4';                  /// Tokyo-Hot
+                par_recommend.appendChild(Preview);
+                plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
+            }
+            else {
+                console.log('cannot locate Serial Number');
+            }
+        }
+        else {
+            console.log('Not Tokyo - Hot');
+        }
+        if (regCarib.test(Vendor)) {
+            Preview.src = 'http://smovie.caribbeancom.com/sample/movies/' + Serial + '/1080p.mp4';            /// Caribbean
             par_recommend.appendChild(Preview);
+            Preview.onerror = function () {
+                this.src = 'http://smovie.caribbeancom.com/sample/movies/' + Serial + '/720p.mp4';
+            };
             plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
         }
         else {
-            console.log('cannot locate Serial Number');
+            console.log('Not Caribbean');
         }
-    }
-    else {
-        console.log('Not Tokyo - Hot');
-    }
-    if (regCarib.test(Vendor)) {
-        Preview.src = 'http://smovie.caribbeancom.com/sample/movies/' + Serial + '/1080p.mp4';            /// Caribbean
-        par_recommend.appendChild(Preview);
-        Preview.onerror = function () {
-            this.src = 'http://smovie.caribbeancom.com/sample/movies/' + Serial + '/720p.mp4';
-        };
-        plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
-    }
-    else {
-        console.log('Not Caribbean');
-    }
-    if (regNHDTA.test(Vendor)) {
-        Preview.src = 'http://151.mediaimage.jp/' + Serial.replace(/(-)/,"_") + '.mp4';                   /// NHDTA
-        Preview.onerror = function() {
-            this.src = "";
-        };
-        if (Preview.src) {
-            par_recommend.appendChild(Preview);
-            plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
-        }
-    }
-    if (regSod.test(Vendor)) {
-        let time = $('span.header')[1].parentElement.innerText;
-        let Regtime = /(\d{4})-(\d{2})-(\d{2})/;
-        let smSerial = Serial.toLowerCase().replace('-','_');
-        Preview.src = 'http://dl.sod.co.jp/' + Regtime.exec(time)[1] + Regtime.exec(time)[2] + '/' + smSerial + '/' + smSerial + '_sample.mp4';       /// SOD
-        Preview.onerror = function() {
-            this.src = "";
-        };
-        if (Preview.src) {
-            par_recommend.appendChild(Preview);
-            plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
-        }
-    }
-    if (!Preview.src) {
-        if (regPF.test(ParentKey)) {
-            var pinfan = regPF.exec(ParentKey)[1];
-            let arr1 = pinfan.split("");
-            var dfd = $.Deferred();
-            var stack01 = [
-                conbine( arr1[0],arr1.slice(0,3).join(""),pinfan ),
-                conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(00)/,"")),
-                conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,"") )
-            ];
-            test_url(Preview,stack01,function() {
-                GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary中获取"品番"
-                    method: "GET",
-                    url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
-                    headers : {"User-Agent": UA},
-                    onload: function(response) {
-                        var r = response.responseText;
-                        var lib_pf;
-                        let pattern = /adult\/(.*?)\//;
-                        var dom = parser.parseFromString(r, "text/html");
-                        var lib_subs = dom.getElementsByClassName('id');    // lib多个候选项时的番号element
-                        if (dom.getElementById('video_jacket_img')) {
-                            let SRC = dom.getElementById('video_jacket_img').src;
-                            lib_pf = pattern.exec(SRC)[1];   // true 品番
-                            let arr1 = lib_pf.split("");
-                            var stack02 = [
-                                conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf)
-                            ];
-                            test_url(Preview,stack02);
-                            console.log('GM did tried01.');
-                        }
-                        else if (lib_subs) {
-                            var lib_subs2 = (function(e) {for (let i=0;i<e.length;i++) {if (e[i].innerText == Serial) {return e[i];}}})(lib_subs);
-                            let lib_sub = verify(lib_subs2,Serial,Title_big);
-                            let pat = new RegExp(Serial);
-                            lib_pf = pattern.exec(lib_sub.nextElementSibling.src)[1]; //here
-                            let arr1 = lib_pf.split("");
-                            var stack03 = [
-                                conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf)
-                            ];
-                            test_url(Preview,stack03);
-                            console.log('GM did tried02.');
-                        }
-                    }
-                });});
-            par_recommend.appendChild(Preview);
-            plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
-        }
-    }
-    if (Preview.src) {
-        var Speed = document.createElement('button');
-        var speed_2 = speed('2','speed_2','speed');
-        var speed_1_5 = speed('1.5','speed_1_5','speed');
-        var speed_1 = speed('1','speed_1','speed');
-        Speed.id = 'Speed';
-        Speed.innerText = 'Speed';
-        document.getElementsByClassName('plyr__controls')[0].insertBefore(Speed,$('button[data-plyr="fullscreen"]')[0]);           //////////// Handling Speed
-        document.querySelector('body > div.container > div.row.movie').nextElementSibling.id = 'Sample';
-        Speed.appendChild(speed_2);
-        Speed.appendChild(speed_1_5);
-        Speed.appendChild(speed_1);
-        setClick('#speed_2',2,Preview);
-        setClick('#speed_1_5',1.5,Preview);
-        setClick('#speed_1',1,Preview);
-        $('.speed').css({'position':'absolute',
-                         'background-color': 'rgba(52,152,219,0.4)',
-                         'display': 'none'});
-        $('#Sample').bind('click',function () {
-            $('div[class="row hidden-xs ptb-10 text-center"]').slideToggle('normal');
-        });
-        $('#Speed').hover(function () { $('.speed').show();},
-                          function() { $('.speed').hide(); });
-        $('.speed').hover(function() { $(this).css({'background-color': 'rgba(52,152,219,1.0)'});},
-                          function () { $(this).css({'background-color': 'rgba(52,152,219,0.4)'});}
-                         );
-    }
-    ///////////////////////////  Preview Player End Here /////////////////////////////
-    var TkFetch = function() {GM_xmlhttpRequest({
-        method: "GET",                                                    //这里是TorrentKitty第一页部分
-        headers : {"User-Agent": navigator.userAgent},
-        url: "http://cntorrentkitty.org/tk/" + num + "/1-0-0.html",
-        onload: function(response) {
-            var r_tk = response.responseText;
-            var dom_tk = parser.parseFromString(r_tk, "text/html");
-            ///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
-            if (dom_tk.title.indexOf('moment') > -1) {
-                let auth = MainWindow.open("http://cntorrentkitty.org/",'Check_CF','height=100,width=100,top=200,left=1200' );
-                let s = setTimeout(function() {
-                    auth.close();
-                    return TkFetch();
-                },5000);
+        if (regSod.test(Vendor)) {
+            let time = $('span.header')[1].parentElement.innerText;
+            let Regtime = /(\d{4})-(\d{2})-(\d{2})/;
+            let smSerial = Serial.toLowerCase().replace('-','_');
+            Preview.src = 'http://dl.sod.co.jp/' + Regtime.exec(time)[1] + Regtime.exec(time)[2] + '/' + smSerial + '/' + smSerial + '_sample.mp4';       /// SOD
+            Preview.onerror = function() {
+                this.src = "";
+            };
+            if (Preview.src) {
+                par_recommend.appendChild(Preview);
+                plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
             }
-            ///////////////////////////////    Bypass CloudFlare End ///////////////////////
-            var list_tk = dom_tk.getElementsByClassName('list')[0];
-            if (list_tk && list_tk != "undefined") {
-                waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
-                    par.insertBefore(tk,bro);
-                    tk.appendChild(list_tk);
-                });            /// 将TK插入到avmo中
-                list_tk.style.overflowY = "scroll";
-                list_tk.style.backgroundColor = "#edffb3";
-                if (arr2 && arr2[0] >260) {
-                    list_tk.style.height = arr2[0].toString() + "px";
-                    console.log(arr2[0].toString(),"arr2d");
-                }
-                else {
-                    list_tk.style.height = "260px";
-                }
-                HandleList(list_tk);
-                $(list_tk).on("scroll",function() {
-                    var nScrollHight = $(this)[0].scrollHeight;
-                    var nScrollTop = $(this)[0].scrollTop;
-                    var nDivHight = $(this).height();
-                    var Re = $(this).find(".related");
-                    for (let y=0;y<Re.length;y++) {
-                        Re[y].remove();
+        }
+        if (!Preview.src) {
+            if (regPF.test(ParentKey)) {
+                var pinfan = regPF.exec(ParentKey)[1];
+                let arr1 = pinfan.split("");
+                var stack01 = [
+                    conbine( arr1[0],arr1.slice(0,3).join(""),pinfan ),
+                    conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(00)/,"")),
+                    conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,"") )
+                ];
+                test_url(Preview,stack01,function() {
+                    GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary中获取"品番"
+                        method: "GET",
+                        url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
+                        headers : {"User-Agent": UA},
+                        onload: function(response) {
+                            var r = response.responseText;
+                            var lib_pf;
+                            let pattern = /adult\/(.*?)\//;
+                            var dom = parser.parseFromString(r, "text/html");
+                            var lib_subs = dom.getElementsByClassName('id');    // lib多个候选项时的番号element
+                            if (dom.getElementById('video_jacket_img')) {
+                                let SRC = dom.getElementById('video_jacket_img').src;
+                                lib_pf = pattern.exec(SRC)[1];   // true 品番
+                                let arr1 = lib_pf.split("");
+                                var stack02 = [
+                                    conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf)
+                                ];
+                                test_url(Preview,stack02);
+                                console.log('GM did tried01.');
+                            }
+                            else if (lib_subs) {
+                                var lib_subs2 = (function(e) {for (let i=0;i<e.length;i++) {if (e[i].innerText == Serial) {return e[i];}}})(lib_subs);
+                                let lib_sub = verify(lib_subs2,Serial,Title_big);
+                                let pat = new RegExp(Serial);
+                                lib_pf = pattern.exec(lib_sub.nextElementSibling.src)[1]; //here
+                                let arr1 = lib_pf.split("");
+                                var stack03 = [
+                                    conbine(arr1[0],arr1.slice(0,3).join(""),lib_pf)
+                                ];
+                                test_url(Preview,stack03);
+                                console.log('GM did tried02.');
+                            }
+                        }
+                    });});
+                par_recommend.appendChild(Preview);
+                plyr.setup({ controls: ['play-large', 'play', 'speed-up', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],displayDuration: true});
+            }
+        }
+        if (Preview.src) {
+            var Speed = document.createElement('button');
+            var speed_2 = speed('2','speed_2','speed');
+            var speed_1_5 = speed('1.5','speed_1_5','speed');
+            var speed_1 = speed('1','speed_1','speed');
+            Speed.id = 'Speed';
+            Speed.innerText = 'Speed';
+            document.getElementsByClassName('plyr__controls')[0].insertBefore(Speed,$('button[data-plyr="fullscreen"]')[0]);           //////////// Handling Speed
+            document.querySelector('body > div.container > div.row.movie').nextElementSibling.id = 'Sample';
+            Speed.appendChild(speed_2);
+            Speed.appendChild(speed_1_5);
+            Speed.appendChild(speed_1);
+            setClick('#speed_2',2,Preview);
+            setClick('#speed_1_5',1.5,Preview);
+            setClick('#speed_1',1,Preview);
+            $('.speed').css({'position':'absolute',
+                             'background-color': 'rgba(52,152,219,0.4)',
+                             'display': 'none'});
+            $('#Sample').bind('click',function () {
+                $('div[class="row hidden-xs ptb-10 text-center"]').slideToggle('normal');
+            });
+            $('#Speed').hover(function () { $('.speed').show();},
+                              function() { $('.speed').hide(); });
+            $('.speed').hover(function() { $(this).css({'background-color': 'rgba(52,152,219,1.0)'});},
+                              function () { $(this).css({'background-color': 'rgba(52,152,219,0.4)'});}
+                             );
+        }
+        ///////////////////////////  Preview Player End Here /////////////////////////////
+        var TkFetch = function() {
+            /*var default_url = "http://cntorrentkitty.org/tk/" + num + "/1-0-0.html";   // 默认排序
+            var pagin = get_pagin(default_url,'cntk');
+            console.log('This is pagin:' + pagin);*/
+            GM_xmlhttpRequest({
+                method: "GET",                                                    //这里是TorrentKitty第一页部分
+                url: "http://cntorrentkitty.org/tk/" + num + "/1-0-0.html",
+                onload: function(response) {
+                    var r_tk = response.responseText;
+                    var dom_tk = parser.parseFromString(r_tk, "text/html");
+                    ///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
+                    if (dom_tk.title.indexOf('moment') > -1) {
+                        let auth = MainWindow.open("http://cntorrentkitty.org/",'Check_CF','height=100,width=100,top=200,left=1200' );
+                        let s = setTimeout(function() {
+                            auth.close();
+                            return TkFetch();
+                        },5000);
                     }
-                    if (nScrollTop + nDivHight >= nScrollHight-10) {   //滚动到底加载torrentkitty第二页
-                        if (tk.getElementsByClassName('list2')[0]) {
-                            console.log('nothing');
+                    ///////////////////////////////    Bypass CloudFlare End ///////////////////////
+                    var list_tk = dom_tk.getElementsByClassName('list')[0];
+                    if (list_tk && list_tk != "undefined") {
+                        waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
+                            par.insertBefore(tk,bro);
+                            tk.appendChild(list_tk);
+                        });            /// 将TK插入到avmo中
+                        list_tk.style.overflowY = "scroll";
+                        list_tk.style.backgroundColor = "#edffb3";
+                        if (arr2 && arr2[0] >260) {
+                            list_tk.style.height = arr2[0].toString() + "px";
+                            console.log(arr2[0].toString(),"arr2d");
                         }
                         else {
-                            $(list_tk).off("scroll");
-                            GM_xmlhttpRequest({
-                                method: "GET",
-                                url: "http://cntorrentkitty.org/tk/" + num + "/2-0-0.html",  //加载torrentkitty第二页
-                                onload: function(response) {
-                                    var p2 = response.responseText;
-                                    var p2_dom = parser.parseFromString(p2,"text/html");
-                                    var list_tk2 = p2_dom.querySelector('body > div.container > div.index-middle-center > div.content > div > div.list');
-                                    if (list_tk2) {
-                                        list_tk2.className = "list2";
-                                        list_tk.appendChild(list_tk2);
-                                        HandleList(list_tk2);
-                                    }
-                                }
-                            });
+                            list_tk.style.height = "260px";
                         }
+                        HandleList(list_tk);
+                        $(list_tk).on("scroll",function() {             //设置滚动加载
+                            var nScrollHight = $(this)[0].scrollHeight;
+                            var nScrollTop = $(this)[0].scrollTop;
+                            var nDivHight = $(this).height();
+                            var Re = $(this).find(".related");
+                            for (let y=0;y<Re.length;y++) {
+                                Re[y].remove();
+                            }
+                            if (nScrollTop + nDivHight >= nScrollHight-10) {   //滚动到底加载torrentkitty第二页
+                                if (tk.getElementsByClassName('list2')[0]) {
+                                    console.log('nothing');
+                                }
+                                else {
+                                    $(list_tk).off("scroll");
+                                    GM_xmlhttpRequest({
+                                        method: "GET",
+                                        url: "http://cntorrentkitty.org/tk/" + num + "/2-0-0.html",  //加载torrentkitty第二页
+                                        onload: function(response) {
+                                            var p2 = response.responseText;
+                                            var p2_dom = parser.parseFromString(p2,"text/html");
+                                            var list_tk2 = p2_dom.querySelector('body > div.container > div.index-middle-center > div.content > div > div.list');
+                                            if (list_tk2) {
+                                                list_tk2.className = "list2";
+                                                list_tk.appendChild(list_tk2);
+                                                HandleList(list_tk2);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
                     }
-                });
+                    else {
+                        console.log("(Check if CloudFlare has interfered.)torrentkitty: ",dom_tk);
+                    }
+                }
+            });};
+        TkFetch();
+        ///////////////// TorrentKitty Ends //////////////
+
+        /////////////////   BTBIT starts   //////////////
+        let btbit = document.createElement('div');
+        $(btbit).attr({'id':"btbit_result"});
+        GM_xmlhttpRequest({
+            method: "GET",
+            timeout: 5000,
+            url: 'http://cn.btbit.pw/list/' + Serial + '/1-1-0.html',
+            onload: function(resp) {
+                let dom_bit = parser.parseFromString(resp.responseText, "text/html");
+                if (dom_bit.getElementsByClassName('pbox sort-box').length) {
+                    btbit.appendChild(dom_bit.getElementsByClassName('pbox')[2]);
+                    $(btbit).insertAfter($(par));
+                    $('.sbar').find('a').each(function(){     // 按“磁力链接”进行复制
+                        $(this).click(function(event) {
+                            GM_setClipboard(this.href);
+                            this.style.color = '#98a6bc';
+                            event.preventDefault();
+                        })
+                    });
+                    $('.sbar').each(function(ParIdx,ParElm) {        // remove redundant details and highlight file count
+                        Array.from(ParElm.children).slice(-3)[0].className = 'fileCount';
+                        [].forEach.call(Array.from(ParElm.children).slice(-2),function(el) {
+                            el.style.display = 'none';
+                        });
+                    });
+                }
             }
-            else {
-                console.log("(Check if CloudFlare has interfered.)torrentkitty: ",dom_tk);
-            }
-        }
-    });};
-    TkFetch();
+
+        })
+        ////////////////////   BTBIT Ends  /////////////////////
+
+
+        /////////////////  BTDB Starts  ////////////////////   Comment out as btdb has been down since 2018.12
+        /*let btdb = document.createElement('div');
+        $(btdb).attr({'id':'btdb_result',})
+        GM_xmlhttpRequest({
+            method: "GET",
+            timeout: 5000,
+            url: 'http://btdb.to/q/' + Serial,
+            onload: function(resp) {
+                let dom_db = parser.parseFromString(resp.responseText, "text/html");
+                if (dom_db.getElementsByClassName('search-ret-list').length) {
+                    btdb.appendChild(dom_db.getElementsByClassName('search-ret-list')[0]);
+                    $(btdb).insertAfter($(par));
+                    $('a[title="Download using magnet"]').click(function (event) {
+                        GM_setClipboard(this.href);
+                        this.style.color = '#98a6bc';
+                        event.preventDefault();
+                    })
+
+                }}
+        })*/
+        //////////////////  BTDB Ends  //////////////////////
+    }
+    else {console.log('wrong domain: ' + location.hostname)}
 })();
 
 function waitForKeyElements (
