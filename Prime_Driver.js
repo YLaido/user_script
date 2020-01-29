@@ -5,11 +5,11 @@
 // @description  Practice
 // @author       YLaido
 // @match        *://avmoo.net/*/movie/*
-// @match        *://avmoo.asia/*/movie/*
-// @match        *://avmask.com/*/movie/*
 // @match        *://avmoo.xyz/*/movie/*
 // @match        *://javzoo.com/*/movie/*
+// @match        *://avmoo.asia/*/movie/*
 // @match        *://avsox.net/*/movie/*
+// @match        *://avmask.com/*/movie/*
 // @match        *://javfee.com/*/movie/*
 // @match        *://avio.pw/*/movie/*
 // @require      http://libs.baidu.com/jquery/2.0.0/jquery.js
@@ -20,22 +20,23 @@
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
 // @connect      btsow.pw
+// @connect      btspread.com
 // @connect      btos.pw
 // @connect      btbit.pw
-// @connect      btspread.com
-// @connect      avmoo.asia
 // @connect      javlibrary.com
-// @connect      btdb.to
+// @connect      btdb.io
 // @connect      btbit.vip
-// @connect      btbit.org
-// @connect      btbit.info
+// @connect      btbit.host
+// @connect      btbit.icu
+// @connect      btbit.red
 // @connect      btbit.fun
 // @connect      http://torrentkitty.bid
 // @connect      cntorrentkitty.xyz
+// @connect      torrentkittyla.pw
+// @connect      torrentkittyla.net
 // @connect      cntorrentkitty.cc
 // @connect      cntorrentkitty.co
 // @connect      torrentkitty.bid
-// @connect      torrentkittyla.net
 // @connect      cntorrentkitty.net
 // ==/UserScript==
 
@@ -496,7 +497,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                              );
         }
         ///////////////////////////  Preview Player End Here /////////////////////////////
-        /* uncomment to enable cntorrentkitty, it gets commented due to crappy user experience.*/
+        // uncomment to enable cntorrentkitty, it gets commented due to crappy user experience.
         var TkFetch = function() {
             //var default_url = "http://torrentkitty.bid/tk/" + num + "/1-0-0.html";   // 默认排序
             //var pagin = get_pagin(default_url,'cntk');
@@ -574,12 +575,12 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         ///////////////// TorrentKitty Ends //////////////
 
         /////////////////   BTBIT starts   //////////////
-        let btbit = document.createElement('div');
+        /*let btbit = document.createElement('div');
         $(btbit).attr({'id':"btbit_result"});
         GM_xmlhttpRequest({
             method: "GET",
             //timeout: 6000,
-            url: 'http://btbit.org/list/' + Serial + '/1-1-0.html',
+            url: 'http://cn.btbit.red/list/' + Serial + '/1-1-0.html',
             onload: function(resp) {
                 let dom_bit = parser.parseFromString(resp.responseText, "text/html");
                 if (dom_bit.getElementsByClassName('pbox sort-box').length) {
@@ -601,21 +602,21 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 }
             }
 
-        })
+        })*/
         ////////////////////   BTBIT Ends  /////////////////////
 
 
         /////////////////  BTDB Starts  ////////////////////   Comment out as btdb has been down since 2018.12
-        /*let btdb = document.createElement('div');
+        let btdb = document.createElement('div');
         $(btdb).attr({'id':'btdb_result',})
         GM_xmlhttpRequest({
             method: "GET",
             timeout: 5000,
-            url: 'http://btdb.to/q/' + Serial,
+            url: 'http://btdb.io/?s=' + Serial,
             onload: function(resp) {
                 let dom_db = parser.parseFromString(resp.responseText, "text/html");
                 if (dom_db.getElementsByClassName('search-ret-list').length) {
-                    btdb.appendChild(dom_db.getElementsByClassName('search-ret-list')[0]);
+                    btdb.appendChild(dom_db.getElementsByClassName('search-ret')[0]);
                     $(btdb).insertAfter($(par));
                     $('a[title="Download using magnet"]').click(function (event) {
                         GM_setClipboard(this.href);
@@ -624,7 +625,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     })
 
                 }}
-        })*/
+        })
         //////////////////  BTDB Ends  //////////////////////
     }
     else {console.log('wrong domain: ' + location.hostname)}
