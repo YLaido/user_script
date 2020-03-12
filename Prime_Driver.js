@@ -8,7 +8,7 @@
 // @match        *://avmoo.xyz/*/movie/*
 // @match        *://javzoo.com/*/movie/*
 // @match        *://avmoo.asia/*/movie/*
-// @match        *://avsox.net/*/movie/*
+// @match        *://avsox.host/*/movie/*
 // @match        *://avmask.com/*/movie/*
 // @match        *://javfee.com/*/movie/*
 // @match        *://avio.pw/*/movie/*
@@ -19,7 +19,7 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
-// @connect      btsow.pw
+// @connect      btsow.club
 // @connect      btspread.com
 // @connect      btos.pw
 // @connect      btbit.pw
@@ -30,14 +30,6 @@
 // @connect      btbit.icu
 // @connect      btbit.red
 // @connect      btbit.fun
-// @connect      http://torrentkitty.bid
-// @connect      cntorrentkitty.xyz
-// @connect      torrentkittyla.pw
-// @connect      torrentkittyla.net
-// @connect      cntorrentkitty.cc
-// @connect      cntorrentkitty.co
-// @connect      torrentkitty.bid
-// @connect      cntorrentkitty.net
 // ==/UserScript==
 
 function extract (arr,arr2) {
@@ -95,6 +87,8 @@ function get_pagin(URL,site) {
     })
     return pagi;
 }
+
+
 function conbine(kw1,kw2,pf) {
     return ["http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_dmb_w.mp4",
             "http://cc3001.dmm.co.jp/litevideo/freepv/" + kw1 + "/" + kw2 + "/" + pf + "/" + pf + "_dm_w.mp4",
@@ -262,7 +256,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
 //////////////////////////////   One Time Function   !!!!!!!!!!!!!!!!!!!!!!!
 
 (function() {
-    let DOMAINLISTS = ['avmoo.net','javlog.com','avmoo.com','javfee.com','avio.pw','avmoo.pw','avmo.pw','avsox.net','avmoo.xyz','javzoo.com','avmoo.asia','avmask.com'];
+    let DOMAINLISTS = ['avmoo.net','javlog.com','avmoo.com','javfee.com','avio.pw','avmoo.pw','avmo.pw','avsox.net','avmoo.xyz','javzoo.com','avmoo.asia','avmask.com',"avsox.host"];
     if (DOMAINLISTS.indexOf(location.hostname) > -1 && location.pathname.indexOf('movie') > -1) {
         document.getElementById('movie-share').remove();
         var plyrCSS = GM_getResourceText ("PlyrCSS");
@@ -327,7 +321,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         var num = $('[style="color:#CC0000;"]').text();
         GM_xmlhttpRequest({
             method: "GET",
-            url: "https://btos.pw/search/" + num,
+            url: "https://btsow.club/search/" + num,
             headers : {"User-Agent": UA},
             onload: function(response) {
                 var r = response.responseText;
@@ -431,7 +425,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     conbine( arr1[0],arr1.slice(0,3).join(""),pinfan.replace(/(000)/,"") )
                 ];
                 test_url(Preview,stack01,function() {
-                    GM_xmlhttpRequest({                                                  // Ultra solution: javlibrary中获取"品番"
+                    GM_xmlhttpRequest({                                                  // final solution: javlibrary中获取"品番"
                         method: "GET",
                         url: "http://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + Serial,
                         headers : {"User-Agent": UA},
@@ -498,7 +492,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         }
         ///////////////////////////  Preview Player End Here /////////////////////////////
         // uncomment to enable cntorrentkitty, it gets commented due to crappy user experience.
-        var TkFetch = function() {
+        /*var TkFetch = function() {
             //var default_url = "http://torrentkitty.bid/tk/" + num + "/1-0-0.html";   // 默认排序
             //var pagin = get_pagin(default_url,'cntk');
             //console.log('This is pagin:' + pagin);
@@ -571,7 +565,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 }
             });};
         TkFetch();
-        
+*/
         ///////////////// TorrentKitty Ends //////////////
 
         /////////////////   BTBIT starts   //////////////
@@ -611,20 +605,34 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         $(btdb).attr({'id':'btdb_result',})
         GM_xmlhttpRequest({
             method: "GET",
+            headers: {'User-Agent':"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36"},
             timeout: 5000,
-            url: 'http://btdb.io/?s=' + Serial,
+            url: 'https://btdb.io/search/' + Serial + '/',
             onload: function(resp) {
                 let dom_db = parser.parseFromString(resp.responseText, "text/html");
-                if (dom_db.getElementsByClassName('search-ret-list').length) {
-                    btdb.appendChild(dom_db.getElementsByClassName('search-ret')[0]);
+                let item_block = dom_db.getElementsByClassName('media');
+                let tmp = []
+                //console.log(dom_db.getElementsByClassName('media'));
+                if (item_block.length) {
+                    for (let i = 0;i<item_block.length;i++) {tmp.push(item_block[i])};
+                    console.log(tmp);
+                    [].forEach.call(tmp,function(el) {
+                        el.getElementsByClassName('img-fluid img-thumbnail hidden-xs hidden-sm')[0].remove();
+                        el.getElementsByClassName('media-right hidden-xs')[0].style.display = 'none';
+                        let magnet = document.createElement('button');
+                        magnet.innerText = 'Magnet';
+                        $(magnet).click(function (event) {
+                            GM_setClipboard($(el).find('a[class="btn btn-square btn-outline btn-success"]')[0].href);
+                            this.style.color = '#98a6bc';
+                            event.preventDefault();
+                        })
+                        el.getElementsByClassName('item-meta-info')[0].appendChild(magnet);
+                    });
+                    [].forEach.call(tmp,function (el) { btdb.appendChild(el) });
                     $(btdb).insertAfter($(par));
-                    $('a[title="Download using magnet"]').click(function (event) {
-                        GM_setClipboard(this.href);
-                        this.style.color = '#98a6bc';
-                        event.preventDefault();
-                    })
 
-                }}
+                }
+            }
         })
         //////////////////  BTDB Ends  //////////////////////
     }
