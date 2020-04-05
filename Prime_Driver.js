@@ -161,6 +161,29 @@ function verify(iter,serial,title) {
     }
 }
 
+function FloatSize(size) {     // parse file size into float number
+    var matches = size.match( /^(\d+(?:\.\d+)?)\s*([a-z]+)/i );
+    var multipliers = {
+        b:  1,
+        bytes: 1,
+        kb: 1000,
+        kib: 1024,
+        mb: 1000000,
+        mib: 1048576,
+        gb: 1000000000,
+        gib: 1073741824,
+        tb: 1000000000000,
+        tib: 1099511627776,
+        pb: 1000000000000000,
+        pib: 1125899906842624
+    };
+    if (matches) {
+        var multiplier = multipliers[matches[2].toLowerCase()];
+        return parseFloat( matches[1] ) * multiplier;
+    } else {
+        return -1;
+    };
+}
 
 function setClick(el,speed,Preview) {  // set Play Speed
     $(el).click(function () {
@@ -259,6 +282,13 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     let DOMAINLISTS = ['avmoo.net','javlog.com','avmoo.com','javfee.com','avio.pw','avmoo.pw','avmo.pw','avsox.net','avmoo.xyz','javzoo.com','avmoo.asia','avmask.com',"avsox.host"];
     if (DOMAINLISTS.indexOf(location.hostname) > -1 && location.pathname.indexOf('movie') > -1) {
         document.getElementById('movie-share').remove();
+        [].forEach.call(document.getElementsByTagName('img'),function(img) {
+            img.src = img.src.replace('jp.netcdn.space','pics.dmm.co.jp')
+
+        });  // 将所有图片地址host从jp.netcdn.space换回dmm，加快加载速度
+        [].forEach.call(document.getElementsByTagName('a'),function(a) {
+            a.href = a.href.replace('jp.netcdn.space','pics.dmm.co.jp')
+        });  // 将所有a标签地址host从jp.netcdn.space换回dmm
         var plyrCSS = GM_getResourceText ("PlyrCSS");
         $('div[class="row hidden-xs ptb-10 text-center"]').hide();
         GM_addStyle(plyrCSS);                                     //  plyr.js ---- CSS
@@ -272,6 +302,7 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                      '#speed_1 {bottom: 100%}',
                      'video {object-fit: inherit;}', //make poster scale the screen
                      '.data-list { width: 60%; float: left;}', // btso
+                     "#btso-result {width: auto}",
                      '#TorrentKitty { width:37%; float:right;}',
                      '.item-title {font-size: 17px;font-weight: bold;}', // btdb section starts
                      '.item-meta-info {font-size: 120%}',
@@ -327,18 +358,70 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                 var r = response.responseText;
                 var dom = parser.parseFromString(r, "text/html");
                 var data_list = dom.querySelector('body > div.container > div.data-list');      //磁力资源列表
+                var movie_entries = [];
                 if (data_list !== null) {
-                    var size = data_list.getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size'); //size作为粘贴按钮
                     var maglink = data_list.getElementsByTagName('a');
-                    var arr1 = [];
-                    for (var v=0;v<size.length;v++){
-                        arr1.push(maglink[v]);              //若不将maglink存储进array中，后面插入<a>会导致maglink发生变化
-                    }
-                    par.insertBefore(data_list,bro);
-                    data_list.style.float = "left";       //想要div左右分布的话必须一同设置左右float
-                    var row = $('[class$=row]');
-                    for (var j=0;j<size.length;j++){
-                        var a = document.createElement('a');
+
+                    //////////////    sorting  files by size ///////////////////
+                    let big2small = [];
+                    [].forEach.call(
+                        $(data_list).find('[class$=row]'),function(el) {
+                            big2small.push( FloatSize(el.getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size')[0].innerText))
+                        }
+                    )
+                    big2small.sort(function(a,b) {return b-a});
+                    for (let i=0;i < $(data_list).find('[class$=row]').length;i++) {
+                        movie_entries[i] = {
+                            "number" : i,
+                            'Filename' : $(data_list).find('[class$=row]')[i].firstElementChild.title,
+                            "Size" : $(data_list).find('[class$=row]')[i].getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size')[0].innerText,
+                            "Date" : $(data_list).find('[class$=row]')[i].getElementsByClassName('col-sm-2 col-lg-2 hidden-xs text-right date')[0].innerText,
+                            "FloatSize": FloatSize($(data_list).find('[class$=row]')[i].getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size')[0].innerText)
+                        }
+                    };
+                    var btso_result = document.createElement('div');
+                    let Cache = [];
+                    btso_result.className ="data-list";
+                    par.insertBefore(btso_result,bro);
+                    [].forEach.call(big2small,function(filesize) {
+                        [].forEach.call(movie_entries,function(entry,i) {
+                            if (entry.FloatSize == filesize && typeof $(data_list).find('[class$=row]')[entry.number] !== 'undefined') {
+                                Cache.push($(data_list).find('[class$=row]')[entry.number]);
+                                delete movie_entries[i];
+                            }})
+                    })
+                    console.log(Cache);
+                    [].forEach.call(Cache,function(el) {btso_result.appendChild(el)})
+                    btso_result.style.float = "left";   //想要div左右分布的话必须一同设置左右float
+                    btso_result.style.width = '60%';
+                    par.insertBefore(btso_result,bro);
+
+                    //////////////   sorting  files by size ///////////////////
+
+                    let rows = $('[class$=row]');
+                    rows.hover(function() {                //鼠标选定时变色
+                        $(this).css('background-color','lightblue');
+                    },function() {
+                        $(this).css('background-color','#eeecec');
+                    });
+                    [].forEach.call(rows,function(row) {
+                        let a = document.createElement('a');
+                        a.href = row.firstElementChild.href.replace(/.*hash\//,'magnet:?xt=urn:btih:');
+                        a.setAttribute('class','Copy');
+                        a.onclick = function (event) {
+                            GM_setClipboard(this.href);
+                            this.style.color = '#98a6bc';
+                            event.preventDefault();
+                        };
+                        let size_field = row.getElementsByClassName('col-sm-2 col-lg-1 hidden-xs text-right size')[0];
+                        a.innerText = size_field.innerText;
+                        size_field.innerText = '';
+                        row.firstElementChild.setAttribute('target','_blank');
+                        size_field.appendChild(a);
+                    });
+                    /*
+                    for (let j=0;j<size.length;j++){
+                        let a = document.createElement('a');
                         a.innerText = size[j].innerText;
                         a.setAttribute('class','Copy');
                         a.href = arr1[j].href.replace(/.*hash\//,'magnet:?xt=urn:btih:');
@@ -353,13 +436,10 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                     for (var i=1;i< row.length;i++) {
                         row[i].firstElementChild.setAttribute('target','_blank');
                     }
-                    row.hover(function() {                //鼠标选定时变色
-                        $(this).css('background-color','lightblue');
-                    },function() {
-                        $(this).css('background-color','#eeecec');
-                    });
+
                     data_list.style.width = '60%';
                     arr2.push(data_list.offsetHeight);
+*/
                 }
                 else {
                     par.insertBefore(empty,bro);
@@ -637,7 +717,8 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
         //////////////////  BTDB Ends  //////////////////////
     }
     else {console.log('wrong domain: ' + location.hostname)}
-})();
+}
+)();
 
 function waitForKeyElements (
 selectorTxt,    /* Required: The jQuery selector string that
