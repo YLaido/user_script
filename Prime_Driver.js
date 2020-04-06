@@ -68,20 +68,6 @@ function get_pagin(URL,site) {
                 }
                 else {console.log('Sth wrong.')}
             }
-            /*switch (site){
-                case 'cntk':
-                    if (dom.getElementsByClassName('page-split')) {
-                        pagi = /\d/.exec($('div[class="page-split"]').children().first().text())[0];
-                    }
-                    else {console.log('sth wrong.')}
-                    break;
-                case 'btbit':
-                    if (dom.getElementsByClassName('pager')) {
-                        pagi = /\d/.exec($(".pager").children().first().text())[0];
-                    }
-                    else {console.log('Sth wrong.')}
-                    break;
-            }*/
             console.log('this is pagin1:',pagi);
         }
     })
@@ -206,79 +192,10 @@ function lib_sift (iter,pattern) {
     }
 }
 
-function HandleList(list_tk) {           //  处理torrentkitty部分的Style
-    var P_tag = list_tk.getElementsByTagName('p');
-    var Img_tag = list_tk.getElementsByTagName('img');
-    var A_tag = list_tk.getElementsByTagName('a');
-    [].forEach.call(A_tag,function(el) {
-        if (el.href){
-            el.href = "http://torrentkitty.bid" + el.pathname + el.hash;
-        }
-        else {
-            console.log(el.href);
-        }
-    });
-    var Re = list_tk.getElementsByClassName('related');
-    for (let y=Re.length;y>=0;y--) {
-        if (Re[y] !== null && typeof(Re[y]) !="undefined")
-            Re[y].remove();}
-    for (var b =0;b<Img_tag.length;b++) {
-        if (Img_tag[b]!== null && typeof(Img_tag[b] != "undefined")) {
-            Img_tag[b].style.width = "4%";
-            if (Img_tag[b].src === "http://torrentkitty.bid/static-files/images/ext/video.png") {
-                Img_tag[b].nextElementSibling.style.backgroundColor = "#ffb3ff";
-            }
-        }
-        else {console.log(Img_tag[b]);}
-    }
-    for (var x=0;x<P_tag.length;x++) {
-        if (P_tag[x] !== null && typeof(P_tag[x]) != "undefined") {
-            if (P_tag[x].className == "dt p0","attr p0","filelist p0") {
-                P_tag[x].style.fontSize = '12px';
-                if (P_tag[x].className == "dt p1" | P_tag[x].className == "dt p0") {
-                    P_tag[x].style.backgroundColor = "#ffdd99";
-                }
-            }
-            else {
-                console.log(P_tag[x],"something wrong");
-            }
-        }
-    }
-    for (var d=0;d<A_tag.length;d++) {
-        if (A_tag[d] !== null && typeof(A_tag[d]) != "undefined") {
-            if (A_tag[d].previousElementSibling !== null) {
-                if (A_tag[d].previousElementSibling.tagName == "IMG") {      //Magnet
-                    A_tag[d].previousElementSibling.style.width = "3%";
-                    A_tag[d].onclick = function (event) {
-                        GM_xmlhttpRequest({
-                            method : "GET",
-                            url: this.href,
-                            onload: function (resp) {
-                                let parser = new DOMParser();
-                                var r = resp.responseText;
-                                var dom = parser.parseFromString(r, "text/html");
-                                GM_setClipboard("magnet:?xt=urn:btih:" + dom.getElementsByClassName('dd infohash')[0].innerText);
-                            }
-                        });
-                        this.style.color = '#8b93a0';
-                        event.preventDefault();
-                    }
-                    A_tag[d].style.color = "red";
-                    A_tag[d].style.fontWeight = "900";
-                }
-                else if (A_tag[d].previousElementSibling.tagName == "SPAN") {     //File_Name
-                    A_tag[d].style.fontWeight = "900";
-                    A_tag[d].previousElementSibling.style.fontWeight = "900";
-                    A_tag[d].previousElementSibling.style.color = "#8c1aff";
-                }
-            }
-        }
-    }
-}
 
 //////////////////////////////   One Time Function   !!!!!!!!!!!!!!!!!!!!!!!
-
-(function() {
+window.addEventListener('load', (event) => {
+  (function() {
     let DOMAINLISTS = ['avmoo.net','javlog.com','avmoo.com','javfee.com','avio.pw','avmoo.pw','avmo.pw','avsox.net','avmoo.xyz','javzoo.com','avmoo.asia','avmask.com',"avsox.host"];
     if (DOMAINLISTS.indexOf(location.hostname) > -1 && location.pathname.indexOf('movie') > -1) {
         document.getElementById('movie-share').remove();
@@ -419,27 +336,6 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                         row.firstElementChild.setAttribute('target','_blank');
                         size_field.appendChild(a);
                     });
-                    /*
-                    for (let j=0;j<size.length;j++){
-                        let a = document.createElement('a');
-                        a.innerText = size[j].innerText;
-                        a.setAttribute('class','Copy');
-                        a.href = arr1[j].href.replace(/.*hash\//,'magnet:?xt=urn:btih:');
-                        a.onclick = function (event) {
-                            GM_setClipboard(this.href);
-                            this.style.color = '#98a6bc';
-                            event.preventDefault();
-                        };
-                        size[j].innerText = '';
-                        size[j].appendChild(a);
-                    }
-                    for (var i=1;i< row.length;i++) {
-                        row[i].firstElementChild.setAttribute('target','_blank');
-                    }
-
-                    data_list.style.width = '60%';
-                    arr2.push(data_list.offsetHeight);
-*/
                 }
                 else {
                     par.insertBefore(empty,bro);
@@ -571,82 +467,6 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
                              );
         }
         ///////////////////////////  Preview Player End Here /////////////////////////////
-        // uncomment to enable cntorrentkitty, it gets commented due to crappy user experience.
-        /*var TkFetch = function() {
-            //var default_url = "http://torrentkitty.bid/tk/" + num + "/1-0-0.html";   // 默认排序
-            //var pagin = get_pagin(default_url,'cntk');
-            //console.log('This is pagin:' + pagin);
-            GM_xmlhttpRequest({
-                method: "GET",                                                    //这里是TorrentKitty第一页部分
-                url: "http://torrentkitty.bid/tk/" + num + "/1-0-0.html",
-                onload: function(response) {
-                    var r_tk = response.responseText;
-                    var dom_tk = parser.parseFromString(r_tk, "text/html");
-                    ///////////////////////////////  Bypass CloudFlare  ////////////////////////////////
-                    if (dom_tk.title.indexOf('moment') > -1) {
-                        let auth = MainWindow.open("http://torrentkitty.bid/",'Check_CF','height=100,width=100,top=200,left=1200' );
-                        let s = setTimeout(function() {
-                            auth.close();
-                            return TkFetch();
-                        },5000);
-                    }
-                    ///////////////////////////////    Bypass CloudFlare End ///////////////////////
-                    var list_tk = dom_tk.getElementsByClassName('list')[0];
-                    if (list_tk && list_tk != "undefined") {
-                        waitForKeyElements(Document.getElementsByClassName('data-list'),function() {      //waitForKeyElements
-                            par.insertBefore(tk,bro);
-                            tk.appendChild(list_tk);
-                        });            /// 将TK插入到avmo中
-                        list_tk.style.overflowY = "scroll";
-                        list_tk.style.backgroundColor = "#edffb3";
-                        if (arr2 && arr2[0] >260) {
-                            list_tk.style.height = arr2[0].toString() + "px";
-                            console.log(arr2[0].toString(),"arr2d");
-                        }
-                        else {
-                            list_tk.style.height = "260px";
-                        }
-                        HandleList(list_tk);
-                        $(list_tk).on("scroll",function() {             //设置滚动加载
-                            var nScrollHight = $(this)[0].scrollHeight;
-                            var nScrollTop = $(this)[0].scrollTop;
-                            var nDivHight = $(this).height();
-                            var Re = $(this).find(".related");
-                            for (let y=0;y<Re.length;y++) {
-                                Re[y].remove();
-                            }
-                            if (nScrollTop + nDivHight >= nScrollHight-10) {   //滚动到底加载torrentkitty第二页
-                                if (tk.getElementsByClassName('list2')[0]) {
-                                    console.log('nothing');
-                                }
-                                else {
-                                    $(list_tk).off("scroll");
-                                    GM_xmlhttpRequest({
-                                        method: "GET",
-                                        url: "http://torrentkitty.bid/tk/" + num + "/2-0-0.html",  //加载torrentkitty第二页
-                                        onload: function(response) {
-                                            var p2 = response.responseText;
-                                            var p2_dom = parser.parseFromString(p2,"text/html");
-                                            var list_tk2 = p2_dom.querySelector('body > div.container > div.index-middle-center > div.content > div > div.list');
-                                            if (list_tk2) {
-                                                list_tk2.className = "list2";
-                                                list_tk.appendChild(list_tk2);
-                                                HandleList(list_tk2);
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    }
-                    else {
-                        console.log("(Check if CloudFlare has interfered.)torrentkitty: ",dom_tk);
-                    }
-                }
-            });};
-        TkFetch();
-*/
-        ///////////////// TorrentKitty Ends //////////////
 
         /////////////////   BTBIT starts   //////////////
         /*let btbit = document.createElement('div');
@@ -719,3 +539,4 @@ function HandleList(list_tk) {           //  处理torrentkitty部分的Style
     else {console.log('wrong domain: ' + location.hostname)}
 }
 )();
+});
